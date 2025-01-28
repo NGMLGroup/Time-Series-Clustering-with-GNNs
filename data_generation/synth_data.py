@@ -476,6 +476,7 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
 
 
 if __name__ == '__main__':
+    # Syntax for generating the dataset
     dataset = SyntheticSpatioTemporalDataset(
         series_type='sine_gpvar',
         graph_type='mixed_ba',
@@ -495,6 +496,7 @@ if __name__ == '__main__':
         save_to='../data/synthetic/balanced',
     )
 
-#     dataset = SyntheticSpatioTemporalDataset(
-#     load_from='../data/synthetic/test',
-# )
+    # Syntax for loading the dataset
+    # dataset = SyntheticSpatioTemporalDataset(
+    #     load_from='../data/synthetic/balanced',
+    # )

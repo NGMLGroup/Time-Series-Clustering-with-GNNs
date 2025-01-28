@@ -33,6 +33,7 @@ class TTSModel(torch.nn.Module):
                  ):
         super(TTSModel, self).__init__()
 
+        # TODO: Add docstring
 
         if exog_size:
             self.input_encoder = ConditionalBlock(
@@ -82,7 +83,7 @@ class TTSModel(torch.nn.Module):
                                     horizon=horizon,
                                     dropout=0.
                                 )
-        
+
         if unpool_softmax == 'temperature':
             self.unpool_softmax = softmax_with_temperature
         elif unpool_softmax == 'straight_through':
@@ -141,7 +142,7 @@ class TTSModel(torch.nn.Module):
     def pool(self, x, edge_index, edge_weight: OptTensor = None):
         # x_in: [batches nodes hidden_size]
 
-        adj = to_dense_adj(edge_index=edge_index, edge_attr=edge_weight, 
+        adj = to_dense_adj(edge_index=edge_index, edge_attr=edge_weight,
                            max_num_nodes=x.size(1))
 
         # x_out: [batches n_latent hidden_size]
@@ -184,4 +185,3 @@ class TTSModel(torch.nn.Module):
         k = self.lin_k(x)
         alpha = torch.einsum('bqnf,btnf->btnf', q, k).softmax(dim=dim)
         return (x * alpha).sum(dim)
-

@@ -1,7 +1,5 @@
-import argparse, sys
-import traceback
+import argparse
 import os
-import gc
 import numpy as np
 import torch
 import pprint
@@ -15,13 +13,15 @@ from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE, MaskedMRE
 from data_generation.synth_data import SyntheticSpatioTemporalDataset
-from modules.torch_model import TTSModel
-from modules.lightning_module import CustomPredictor
+from modules.model import TTSModel
+from modules.predictor import CustomPredictor
 from modules.utils import (
     find_devices
 )
 
-torch.set_float32_matmul_precision('high')
+# TODO: Add a check for cuda availability and device selection
+
+torch.set_float32_matmul_precision('high') # TODO: Check if this is necessary
 
 parser=argparse.ArgumentParser()
 
@@ -75,20 +75,16 @@ metrics = None
 
 ## LOAD DATASET
 base_path = os.getcwd()
-data_path = os.path.join(base_path, 'data')
-
-
+data_path = os.path.join(base_path, 'data', 'synthetic')
 dataset_path = os.path.join(data_path, dataset_name)
-dataset = SyntheticSpatioTemporalDataset(
-load_from= dataset_path
-)
+dataset = SyntheticSpatioTemporalDataset(load_from = dataset_path)
 window = 16
 horizon = 1
 covariates = None
 X, idx = dataset.numpy(return_idx=True)
 labels = dataset.cluster_index
 adj = dataset.connectivity
-dataset_params = np.load(os.path.join(dataset_path, 'dataset_params.npy'), 
+dataset_params = np.load(os.path.join(dataset_path, 'dataset_params.npy'),
                          allow_pickle='TRUE').item()
 print("Dataset params:")
 pprint.pprint(dataset_params)
@@ -104,6 +100,7 @@ torch_dataset = SpatioTemporalDataset(target = X,
                                     horizon = horizon,
                                     delay = 0,
                                     stride = 1)
+exog_size = False if covariates is None else torch_dataset.input_map.u.shape[-1]
 print(torch_dataset)
 
 # Rescale and split the data
@@ -121,13 +118,13 @@ dm = SpatioTemporalDataModule(
 )
 dm.setup()
 print(dm)
-print("Number of NaNs: ", np.sum(np.isnan(dm.scalers['target'].bias.numpy()))) # TODO: Maybe remove this
+# print("Number of NaNs: ", np.sum(np.isnan(dm.scalers['target'].bias.numpy()))) # TODO: Maybe remove this
 
 ## SETUP MODEL
 model_kwargs = {
     'input_size': dm.n_channels,
     'horizon': horizon,
-    'exog_size': False if covariates is None else torch_dataset.input_map.u.shape[-1],
+    'exog_size': exog_size,
     'hidden_size': hidden_size,
     'temporal_layers': temporal_layers,
     'kernel_size': kernel_size,
@@ -149,9 +146,9 @@ optim_kwargs = {'lr': starting_lr, 'weight_decay': weight_decay}
 
 
 scheduler_class = torch.optim.lr_scheduler.MultiStepLR
-scheduler_kwargs = {'gamma': 0.5, 
+scheduler_kwargs = {'gamma': 0.5,
                     'milestones': [
-                        lr_milestone_dist*j 
+                        lr_milestone_dist*j
                         for j in range(1, lr_num_milestones+1)
                         ]
                     }
@@ -176,7 +173,7 @@ predictor = CustomPredictor(
 ## TRAINING
 logger = None# TODO: Change or remove logger
 # avoid logging gradients, parameter histogram and model topology
-# logger.watch(predictor.model, log=None) 
+# logger.watch(predictor.model, log=None)
 
 checkpoint_callback = ModelCheckpoint(
     # dirpath='logs/model_with_pooling',
@@ -193,7 +190,7 @@ early_stop_callback = EarlyStopping(
 
 trainer = pl.Trainer(max_epochs=n_epochs,
                     logger=logger,
-                    devices=find_devices(1),
+                    devices="auto",
                     accelerator="gpu" if torch.cuda.is_available() else "cpu",
                     limit_train_batches=100,
                     limit_val_batches=50,
@@ -205,18 +202,16 @@ trainer.fit(predictor, datamodule=dm)
 ## EVALUATION
 predictor.freeze()
 
-
 s = predictor.model.pooling_layer.assignments().detach().cpu()
 hard_assignments = np.argmax(s.numpy(), axis=-1)
-cluster_ids, cluster_sizes = np.unique(hard_assignments[-1], 
+cluster_ids, cluster_sizes = np.unique(hard_assignments[-1],
                                         return_counts=True)
-print(f'Tot clusters: {len(cluster_ids)} 
-        \nIDs: {cluster_ids} 
-        \nsizes: {cluster_sizes}')
+print(f'Tot clusters: {len(cluster_ids)}\n'
+    f'IDs: {cluster_ids}\n'
+    f'sizes: {cluster_sizes}')
 
 nmi = normalized_mutual_info_score(labels, hard_assignments)
 hs = homogeneity_score(labels, hard_assignments)
 cs = completeness_score(labels, hard_assignments)
 
 print(f'NMI: {nmi} \nHS: {hs} \nCS: {cs}')
-
