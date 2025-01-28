@@ -3,11 +3,8 @@ import torch
 from einops import rearrange
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.typing import OptTensor
-
 from tsl.nn.blocks import MLPDecoder
-from tsl.nn.layers import NodeEmbedding
 from tsl.nn.blocks.encoders import ConditionalBlock
-
 from .layers import GNNEncoder, PoolingLayerWithStaticAssignments, DilatedTCN
 from .utils import softmax_with_temperature, straight_through_softmax
 
@@ -28,12 +25,50 @@ class TTSModel(torch.nn.Module):
                  qual_w,
                  horizon,
                  pool_method = 'mincut',
-                 unpool_softmax = 'temperature', # Other option: 'straight_through'
+                 unpool_softmax = 'temperature',
                  softmax_temp = 1.
                  ):
         super(TTSModel, self).__init__()
 
-        # TODO: Add docstring
+        """
+        Time Then Space STGNN model.
+        Args:
+            input_size : int
+                Number of input features/channels.
+            exog_size : int
+                Number of exogenous features (covariates).
+            hidden_size : int
+                Number of hidden units.
+            temporal_layers : int
+                Number of layers in the temporal encoder.
+            kernel_size : int
+                Size of the kernel in the temporal encoder.
+            dilation : int
+                Dilation factor for the temporal encoder.
+            exponential_dilation : bool
+                Whether to use exponential dilation.
+            skip_connection : bool
+                Whether to use skip connections in the temporal encoder.
+            gcn_layers : int
+                Number of layers in the graph convolutional encoder.
+            n_nodes : int
+                Number of nodes in the graph.
+            n_clusters : int
+                Number of clusters in the pooling layer.
+            topo_w : float
+                Weight of the topological loss.
+            qual_w : float
+                Weight of the quality loss.
+            horizon : int
+                Prediction horizon.
+            pool_method : str
+                Pooling method (pooling loss type).
+            unpool_softmax : str
+                Softmax type applied during unpooling (forward pass).
+                Options: 'temperature', 'straight_through'.
+            softmax_temp : float
+                Initial softmax temperature.
+        """
 
         if exog_size:
             self.input_encoder = ConditionalBlock(
@@ -173,8 +208,10 @@ class TTSModel(torch.nn.Module):
 
     def temporal_aggr(self, x: torch.Tensor, dim: int = -3):
 
-        # Removes the first entries because they include padded values in the receptive field
-        # E.g. if the sequence length is 48 and the recept field is 27, we keep only the last 22 entries
+        # Removes the first entries because they include padded values in the
+        # receptive field.
+        # E.g. if the sequence length is 48 and the recept field is 27, we keep
+        # only the last 22 entries.
         if x.size(dim) > self.receptive_field:
             index = torch.arange(self.receptive_field - 1, x.size(dim),
                                  device=x.device)

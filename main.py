@@ -1,37 +1,19 @@
-import argparse
 import os
-import numpy as np
 import torch
 import pprint
-# from sklearn.metrics import homogeneity_score
+import numpy as np
+import pytorch_lightning as pl
+
 from sklearn.metrics.cluster import (normalized_mutual_info_score,
                                      homogeneity_score,
                                      completeness_score)
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
-from tsl.metrics.torch import MaskedMAE, MaskedMRE
+from tsl.metrics.torch import MaskedMAE
 from data_generation.synth_data import SyntheticSpatioTemporalDataset
 from modules.model import TTSModel
 from modules.predictor import CustomPredictor
-from modules.utils import (
-    find_devices
-)
 
-# TODO: Add a check for cuda availability and device selection
-
-torch.set_float32_matmul_precision('high') # TODO: Check if this is necessary
-
-parser=argparse.ArgumentParser()
-
-parser.add_argument("--dataset_name", help="Give dataset name")
-parser.add_argument("--sweep_id", help="Sweep ID for the sweep")
-parser.add_argument("--n_clusters", help="Number of clusters to use")
-
-args=parser.parse_args()
-
-dataset_name = args.dataset_name if args.dataset_name else 'balanced'
 
 ## EXPERIMENTAL PARAMETERS
 dataset_name = 'balanced'
@@ -66,12 +48,9 @@ lr_milestone_dist = 50
 lr_num_milestones = 5
 early_stop_patience = 50
 weight_decay = 1e-4
-load_best_model = True # TODO: Check if it works with True here
 
 # Loss and metrics
 loss_fn = MaskedMAE()
-# metrics = {'mae': MaskedMAE(), 'mre': MaskedMRE()}
-metrics = None
 
 ## LOAD DATASET
 base_path = os.getcwd()
@@ -118,7 +97,6 @@ dm = SpatioTemporalDataModule(
 )
 dm.setup()
 print(dm)
-# print("Number of NaNs: ", np.sum(np.isnan(dm.scalers['target'].bias.numpy()))) # TODO: Maybe remove this
 
 ## SETUP MODEL
 model_kwargs = {
@@ -144,7 +122,6 @@ model_kwargs = {
 optim_class = torch.optim.Adam
 optim_kwargs = {'lr': starting_lr, 'weight_decay': weight_decay}
 
-
 scheduler_class = torch.optim.lr_scheduler.MultiStepLR
 scheduler_kwargs = {'gamma': 0.5,
                     'milestones': [
@@ -152,7 +129,6 @@ scheduler_kwargs = {'gamma': 0.5,
                         for j in range(1, lr_num_milestones+1)
                         ]
                     }
-
 
 # Setup lightning module
 predictor = CustomPredictor(
@@ -164,37 +140,18 @@ predictor = CustomPredictor(
     scheduler_kwargs=scheduler_kwargs,
     scale_target=scale_target,
     loss_fn=loss_fn,
-    metrics=metrics,
-    log_lr=True,
-    log_grad_norm=True
+    metrics=None
 )
-
 
 ## TRAINING
-logger = None# TODO: Change or remove logger
-# avoid logging gradients, parameter histogram and model topology
-# logger.watch(predictor.model, log=None)
-
-checkpoint_callback = ModelCheckpoint(
-    # dirpath='logs/model_with_pooling',
-    save_top_k=1,
-    monitor='val_mae',
-    mode='min',
-)
-
-early_stop_callback = EarlyStopping(
-    monitor='val_mae',
-    patience=early_stop_patience,
-    mode='min'
-)
-
+logger = None
 trainer = pl.Trainer(max_epochs=n_epochs,
                     logger=logger,
                     devices="auto",
                     accelerator="gpu" if torch.cuda.is_available() else "cpu",
                     limit_train_batches=100,
                     limit_val_batches=50,
-                    callbacks=[checkpoint_callback, early_stop_callback],
+                    callbacks=None,
                     gradient_clip_val=gradient_clip_val,
                     gradient_clip_algorithm='norm')
 trainer.fit(predictor, datamodule=dm)

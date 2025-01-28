@@ -17,7 +17,7 @@ def dense_mincut_pool(
     s: Tensor,
     mask: Optional[Tensor] = None,
     temp: float = 1.0,
-) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+) -> Tuple[Tensor, Tensor, Tensor]:
 
     x = x.unsqueeze(0) if x.dim() == 2 else x
     adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
@@ -73,7 +73,7 @@ def dense_diff_pool(
     mask: Optional[Tensor] = None,
     normalize: bool = True,
     temp: float = 1.0,
-) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+) -> Tuple[Tensor, Tensor, Tensor]:
 
     x = x.unsqueeze(0) if x.dim() == 2 else x
     adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
@@ -106,7 +106,7 @@ def dense_dmon_pool(
     s: Tensor,
     mask: Optional[Tensor] = None,
     temp: float = 1.0,
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    ) -> Tuple[Tensor, Tensor, Tensor]:
 
         x = x.unsqueeze(0) if x.dim() == 2 else x
         adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
@@ -151,14 +151,16 @@ def dense_dmon_pool(
 
         return out, spectral_loss, cluster_loss
 
-# TODO: add reference to repo
+# Based on implementation in:
+# https://github.com/FilippoMB/Total-variation-graph-neural-networks
 def dense_asymcheegercut_pool(
         x: Tensor, adj: Tensor, s: Tensor, mask: Optional[Tensor] = None,
         temp: float = 1.0
-) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+) -> Tuple[Tensor, Tensor, Tensor]:
 
     def _totvar_loss(adj, s):
-        l1_norm = torch.sum(torch.abs(s[..., None, :] - s[:, None, ...]), dim=-1)
+        l1_norm = torch.sum(torch.abs(s[..., None, :] - s[:, None, ...]),
+                            dim=-1)
 
         loss = torch.sum(adj * l1_norm, dim=(-1, -2))
 

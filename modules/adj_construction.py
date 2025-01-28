@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 def construct_adjacency(dataset, adj_type='identity', mask=None,
                         train_slice=None, **kwargs):
-    """
-    Constructs an adjacency matrix for a given dataset based on the specified adjacency type.
+    """Constructs an adjacency matrix for a given dataset based on the specified
+    adjacency type.
     Parameters:
     -----------
     dataset : object (e.g. DateTimeDataset from tsl)
@@ -101,9 +101,9 @@ def construct_adjacency(dataset, adj_type='identity', mask=None,
         if knn is not None:
             adj = top_k(adj,
                         knn,
-                        include_self=False, # Do not include self-loops
+                        include_self=False,
                         keep_values=False) # Binary adjacency matrix
-        adj = np.maximum.reduce([adj, adj.T]) # Symmetrize
+        adj = np.maximum.reduce([adj, adj.T])
 
         adj = dense_to_sparse(torch.from_numpy(adj))
 

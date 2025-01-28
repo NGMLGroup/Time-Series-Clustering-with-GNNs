@@ -83,8 +83,10 @@ class _SineGPVAR(nn.Module):
                 num_instances = torch.unique(cluster_index).numel()
 
             amplitude = amp_max * torch.rand(num_instances, 1, generator=rng)
-            phase = 2*phase_max * torch.rand(num_instances, 1, generator=rng) - phase_max
-            period = period_max * torch.rand(num_instances, 1, generator=rng) + 1
+            phase = (2*phase_max * torch.rand(num_instances, 1, generator=rng)
+                     - phase_max)
+            period = (period_max * torch.rand(num_instances, 1, generator=rng)
+                      + 1)
 
         else:
             amplitude = local_params['amplitude']
@@ -128,7 +130,8 @@ class _ARProcess(nn.Module):
             self.weight = nn.Parameter(torch.Tensor(num_nodes, temporal_order))
         else:
             num_clusters = torch.unique(self.cluster_index).numel()
-            self.weight = nn.Parameter(torch.Tensor(num_clusters, temporal_order))
+            self.weight = nn.Parameter(torch.Tensor(num_clusters,
+                                                    temporal_order))
 
         self.reset_parameters()
 
@@ -156,8 +159,9 @@ class _ARProcess(nn.Module):
                 num_instances = torch.unique(cluster_index).numel()
 
             if p_max > 0:
-                ar_weights = 2. * p_max * torch.rand(num_instances, temporal_order,
-                                                    generator=rng) - p_max
+                ar_weights = 2. * p_max * torch.rand(num_instances,
+                                                     temporal_order,
+                                                     generator=rng) - p_max
             else:
                 ar_weights = torch.ones(num_instances,
                                         temporal_order) / temporal_order
@@ -177,7 +181,8 @@ class _ARProcess(nn.Module):
         return x_l
 
 
-def _mixed_barabasialbert_graph(num_nodes, num_communities, graph_params=None, community_prop=None, seed=None):
+def _mixed_barabasialbert_graph(num_nodes, num_communities, graph_params=None,
+                                community_prop=None, seed=None):
     rng = torch.Generator()
     if seed is not None:
         rng.manual_seed(seed)
@@ -185,18 +190,23 @@ def _mixed_barabasialbert_graph(num_nodes, num_communities, graph_params=None, c
     if num_nodes is None:
         num_nodes = int(100*num_communities)
     if community_prop is None:
-        cluster_index = torch.arange(num_communities).repeat_interleave(int(num_nodes/num_communities))
-        cluster_sizes = torch.tensor([int(num_nodes/num_communities)]*num_communities)
+        cluster_index = torch.arange(
+            num_communities
+        ).repeat_interleave(int(num_nodes/num_communities))
+        cluster_sizes = torch.tensor([int(num_nodes/num_communities)]
+                                     * num_communities)
     else:
         cluster_sizes = (community_prop * num_nodes).int()
-        cluster_index = torch.cat([i * torch.ones(s) for i, s in enumerate(cluster_sizes)]).int()
+        cluster_index = torch.cat([i * torch.ones(s)
+                                   for i, s in enumerate(cluster_sizes)]).int()
 
     if graph_params is None:
         m0_vals = []
         m_vals = []
         for i in range(num_communities):
-            m0_vals.append(torch.randint(1, 10 if cluster_sizes[i] >= 10 else cluster_sizes[i],
-                                            (1,), generator=rng).item())
+            m0_vals.append(torch.randint(1, 10 if cluster_sizes[i] >= 10
+                                        else cluster_sizes[i],
+                                        (1,), generator=rng).item())
             if m0_vals[-1] > 1:
                 m_vals.append(torch.randint(1, m0_vals[-1],
                                             (1,), generator=rng).item())
@@ -231,7 +241,8 @@ def _mixed_barabasialbert_graph(num_nodes, num_communities, graph_params=None, c
     return cluster_index, edge_index
 
 
-def _erdosrenyi_graph(num_nodes, num_communities, graph_params, community_prop=None, seed=None):
+def _erdosrenyi_graph(num_nodes, num_communities, graph_params,
+                      community_prop=None, seed=None):
 
     if graph_params['p'] is None:
         p = 0.05
@@ -249,14 +260,17 @@ def _erdosrenyi_graph(num_nodes, num_communities, graph_params, community_prop=N
     if num_nodes is None:
         num_nodes = int(100*num_communities)
     if community_prop is None:
-        cluster_index = torch.arange(num_communities).repeat_interleave(int(num_nodes/num_communities))
+        cluster_index = torch.arange(
+            num_communities
+        ).repeat_interleave(int(num_nodes/num_communities))
     else:
         cluster_sizes = (community_prop * num_nodes).int()
-        cluster_index = torch.cat([i * torch.ones(s) for i, s in enumerate(cluster_sizes)]).int()
+        cluster_index = torch.cat([i * torch.ones(s) for i, s
+                                   in enumerate(cluster_sizes)]).int()
 
     graph = graphs.ErdosRenyi(N=num_nodes, p=p, seed=seed,
-                                directed=False, self_loops=False, connected=connected,
-                                max_iter=max_iter)
+                                directed=False, self_loops=False,
+                                connected=connected, max_iter=max_iter)
     edge_index = graph.W.tocoo()
     edge_index = torch.tensor([edge_index.row, edge_index.col],
                                 dtype=torch.long)
@@ -293,20 +307,29 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                 self.seed = seed
 
             if graph_type == 'mixed_ba':
-                cluster_index, edge_index = _mixed_barabasialbert_graph(num_nodes,
-                                                                                num_communities,
-                                                                                graph_params,
-                                                                                community_prop,
-                                                                                self.seed)
+                cluster_index, edge_index = _mixed_barabasialbert_graph(
+                    num_nodes,
+                    num_communities,
+                    graph_params,
+                    community_prop,
+                    self.seed
+                )
             elif graph_type == 'erdosrenyi':
-                cluster_index, edge_index = _erdosrenyi_graph(num_nodes, num_communities, graph_params, community_prop, seed=self.seed)
+                cluster_index, edge_index = _erdosrenyi_graph(
+                    num_nodes,
+                    num_communities,
+                    graph_params,
+                    community_prop,
+                    seed=self.seed
+                )
             else:
                 raise ValueError(f'Unknown graph type: {graph_type}')
 
             self.cluster_index = cluster_index
 
         else:
-            params_dict = np.load(load_from + '/dataset_params.npy', allow_pickle='TRUE').item()
+            params_dict = np.load(load_from + '/dataset_params.npy',
+                                  allow_pickle='TRUE').item()
 
             num_nodes = params_dict['num_nodes']
             num_communities = params_dict['num_communities']
@@ -345,7 +368,8 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                 amp_max=amp_max,
                 phase_max=phase_max,
                 period_max=period_max,
-                cluster_index=self.cluster_index if share_community_weights else None,
+                cluster_index=(self.cluster_index if share_community_weights
+                               else None),
                 seed=self.seed)
 
         elif series_type == 'arprocess':
@@ -358,7 +382,8 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                 temporal_order=global_params,
                 ar_weights=local_params,
                 p_max=p_max,
-                cluster_index=self.cluster_index if share_community_weights else None,
+                cluster_index=(self.cluster_index if share_community_weights
+                               else None),
                 seed=self.seed)
         else:
             raise ValueError(f'Unknown series type: {series_type}')
@@ -398,7 +423,9 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
         if not hasattr(self, 'target'):
             target, optimal_pred, mask = self.load_raw()
         else:
-            target, optimal_pred, mask = self.target, self.optimal_pred, self.mask
+            target, optimal_pred, mask = (self.target,
+                                          self.optimal_pred,
+                                          self.mask)
         if not os.path.isabs(foldername):
             this_dir = os.path.dirname(os.path.realpath(__file__))
             foldername = os.path.join(this_dir, foldername)
@@ -485,11 +512,12 @@ if __name__ == '__main__':
         num_steps=2000,
         community_prop=None,
         graph_params={'m0': [3, 2, 5, 2, 4], 'm': [2, 1, 4, 1, 2]},
-        global_params=[[0.6, 0.],
-                    [0., 0.2]],
-        local_params={'amplitude': torch.tensor([[0.4], [0.5], [0.6], [0.4], [0.5]]),
-                    'phase': torch.tensor([[0.], [0.15], [-0.15], [-0.2], [0.2]]),
-                    'period': torch.tensor([[12.], [14.], [10.], [16.], [12.]])},
+        global_params=[[0.6, 0.], [0., 0.2]],
+        local_params={
+            'amplitude': torch.tensor([[0.4], [0.5], [0.6], [0.4], [0.5]]),
+            'phase': torch.tensor([[0.], [0.15], [-0.15], [-0.2], [0.2]]),
+            'period': torch.tensor([[12.], [14.], [10.], [16.], [12.]])
+        },
         sigma_noise=0.6,
         seed=42,
         share_community_weights=True,

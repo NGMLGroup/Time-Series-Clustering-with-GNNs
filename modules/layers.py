@@ -1,15 +1,10 @@
-import math
-
 import torch
+
 from torch import nn, Tensor
-from torch_geometric.nn.models.mlp import Linear
-from torch_geometric.nn import MLP
-from torch_geometric.nn.resolver import activation_resolver
 from tsl.nn.layers import (GraphConv, TemporalConv, Concatenate, Activation,
                            Lambda, Dense, NodeEmbedding)
 from tsl.nn import utils
 from tsl import logger
-
 from .pooling_functions import (dense_mincut_pool, dense_diff_pool,
                                 dense_dmon_pool, dense_asymcheegercut_pool)
 
@@ -51,27 +46,30 @@ class GNNEncoder(torch.nn.Module):
 class PoolingLayerWithStaticAssignments(torch.nn.Module):
     def __init__(self,
                  k,
-                 n_nodes=None,          
-                 topo_w=None,          
-                 qual_w=None,          
-                 method='mincut'     
+                 n_nodes,
+                 topo_w=1.0,
+                 qual_w=1.0,
+                 method='mincut'
                  ):
-        """
-        k: number of clusters
-        mlp_units: list of units for the MLP
-        activation: activation function
-        bias: whether to use bias in the MLP
-        static_assign: whether to use static or features-dependent cluster assignments
-        n_nodes: number of nodes in the graph
-        topo_w: weight of the first loss term
-        qual_w: weight of second loss term
-        method: pooling method
 
-        For method = 'mincut', topo_w and qual_w are the weights of the cut and orthogonality loss terms, respectively.
-        For method = 'asymcheegercut', topo_w is the gtv coefficient and qual_w is the balance coefficient.
-        For method = 'diffpool', topo_w and qual_w are the weights of the link prediction and entropy loss terms, respectively.
-        For method = 'dmonpool', topo_w and qual_w are the weights of the spectral and cluster loss terms, respectively.
         """
+        Args:
+            k (int): Number of clusters.
+            n_nodes (int): Number of nodes in the graph.
+            topo_w (float): Weight of the first loss term. Default is 1.0.
+            qual_w (float): Weight of the second loss term. Default is 1.0.
+            method (str): Pooling method. Default is 'mincut'.
+                Supported methods:
+                - 'mincut': topo_w and qual_w are the weights of the cut and
+                            orthogonality loss terms, respectively.
+                - 'asymcheegercut': topo_w is the gtv coefficient and qual_w is
+                                    the balance coefficient.
+                - 'diffpool': topo_w and qual_w are the weights of the link
+                              prediction and entropy loss terms, respectively.
+                - 'dmon': topo_w and qual_w are the weights of the spectral
+                          and cluster loss terms, respectively.
+        """
+
         super(PoolingLayerWithStaticAssignments, self).__init__()
 
         self.assignments = NodeEmbedding(n_nodes=n_nodes, emb_size=k)
@@ -85,7 +83,7 @@ class PoolingLayerWithStaticAssignments(torch.nn.Module):
         elif method == 'dmon':
             self.pooling_op = dense_dmon_pool
         else:
-            raise NotImplementedError(f"Pooling method {method} not implemented")
+            raise NotImplementedError(f"Method {method} not implemented")
 
         self.topo_w, self.qual_w = topo_w, qual_w
 

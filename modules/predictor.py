@@ -1,19 +1,12 @@
 import torch
-from lightning.pytorch.utilities import grad_norm
 from tsl.engines import Predictor
 from tsl.data import Data
 
 
 class CustomPredictor(Predictor):
 
-    def __init__(self,
-                 log_lr: bool = True,
-                 log_grad_norm: bool = False,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.log_lr = log_lr
-        self.log_grad_norm = log_grad_norm
-
         self.temp_step_size = (self.model.softmax_temp - 0.01) / 100
 
     def predict_batch(self, batch: Data,
@@ -31,7 +24,8 @@ class CustomPredictor(Predictor):
 
         if get_latents:
             with torch.no_grad():
-                latents, s, _ = self.model.get_latent_factors(**inputs, **forward_kwargs)
+                latents, s, _ = self.model.get_latent_factors(**inputs,
+                                                              **forward_kwargs)
             return latents, s
 
         else:
@@ -106,7 +100,8 @@ class CustomPredictor(Predictor):
     def test_step(self, batch, batch_idx):
         """"""
         # Compute outputs and rescale
-        y_hat, *aux_loss = self.predict_batch(batch, preprocess=False, postprocess=True)
+        y_hat, *aux_loss = self.predict_batch(batch, preprocess=False,
+                                              postprocess=True)
 
         y, mask = batch.y, batch.get('mask')
 
@@ -124,33 +119,9 @@ class CustomPredictor(Predictor):
         self.test_metrics.reset()
         return metrics_dict, y_hat
 
-    # TODO: Check if this is necessary
-    def on_before_optimizer_step(self, optimizer):
-        if self.log_grad_norm:
-            # log (unscaled) gradients before updating the parameters (and before clipping)
-            self.log_dict(grad_norm(self, norm_type=2))
-
-    # TODO: Check if this is necessary
-    def on_train_epoch_start(self) -> None:
-        if self.log_lr:
-            # Log learning rate
-            optimizers = self.optimizers()
-            if isinstance(optimizers, list):
-                for i, optimizer in enumerate(optimizers):
-                    lr = optimizer.optimizer.param_groups[0]['lr']
-                    self.log(f'lr_{i}', lr, on_step=False, on_epoch=True,
-                             logger=True, prog_bar=False, batch_size=1)
-            else:
-                lr = optimizers.optimizer.param_groups[0]['lr']
-                self.log(f'lr', lr, on_step=False, on_epoch=True,
-                         logger=True, prog_bar=False, batch_size=1)
-
     def on_train_epoch_end(self) -> None:
-
         # Decrease softmax temperature gradually
-        if self.current_epoch > self.pre_train_epochs-1:
-            self.model.softmax_temp = max(
-                                        0.01,
-                                        self.model.softmax_temp -
-                                        self.temp_step_size)
-        self.log('softmax_temp', self.model.softmax_temp) # TODO: Check if this is necessary
+        self.model.softmax_temp = max(
+                                    0.01,
+                                    self.model.softmax_temp -
+                                    self.temp_step_size)
