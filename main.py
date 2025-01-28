@@ -46,7 +46,6 @@ gradient_clip_val = 5
 lr_scheduler = 'multistep'
 lr_milestone_dist = 50
 lr_num_milestones = 5
-early_stop_patience = 50
 weight_decay = 1e-4
 
 # Loss and metrics
