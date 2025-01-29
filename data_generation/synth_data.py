@@ -502,6 +502,51 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
             return connectivity
 
 
+def setup_dataset_with_params(dataset_params_path, dataset_path, 
+                              force_generate=False):
+    """Setup a synthetic dataset with the given parameters.
+    Args:
+        dataset_params_path : str
+            Path to the dataset parameters file.
+        dataset_path : str
+            Path to the dataset folder.
+        force_generate : bool
+            Whether to force generation of the dataset. Will overwrite if the
+            dataset already exists. Default is False.
+    """
+    # Extract dataset parameters
+    dataset_params = np.load(dataset_params_path, allow_pickle='TRUE').item()
+
+    # Determine whether to generate or load the dataset
+    if (os.path.exists(os.path.join(dataset_path, 'series.npz')) 
+        and not force_generate):
+        load_from = dataset_path
+        save_to = None
+    else:
+        load_from = None
+        save_to = dataset_path
+
+    dataset = SyntheticSpatioTemporalDataset(
+        num_nodes=dataset_params['num_nodes'],
+        num_communities=dataset_params['num_communities'],
+        num_steps=dataset_params['num_steps'],
+        global_params=dataset_params['global_params'],
+        series_type=dataset_params['series_type'],
+        graph_type=dataset_params['graph_type'],
+        local_params=dataset_params['local_params'],
+        graph_params=dataset_params['graph_params'],
+        community_prop=dataset_params['community_prop'],
+        local_limits=dataset_params['local_limits'],
+        sigma_noise=dataset_params['sigma_noise'],
+        share_community_weights=dataset_params['share_community_weights'],
+        save_to=save_to,
+        load_from=load_from,
+        seed=dataset_params['seed']
+    )
+
+    return dataset
+
+
 if __name__ == '__main__':
     # Syntax for generating the dataset
     dataset = SyntheticSpatioTemporalDataset(
@@ -523,8 +568,3 @@ if __name__ == '__main__':
         share_community_weights=True,
         save_to='../data/synthetic/balanced',
     )
-
-    # Syntax for loading the dataset
-    # dataset = SyntheticSpatioTemporalDataset(
-    #     load_from='../data/synthetic/balanced',
-    # )

@@ -3,7 +3,7 @@ data/*
 !data/.gitkeep
 
 # Content of logs folder
-logs/
+lightning_logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

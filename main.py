@@ -1,4 +1,5 @@
 import os
+import argparse
 import torch
 import pprint
 import numpy as np
@@ -10,13 +11,18 @@ from sklearn.metrics.cluster import (normalized_mutual_info_score,
 from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
-from data_generation.synth_data import SyntheticSpatioTemporalDataset
+from data_generation.synth_data import setup_dataset_with_params
 from modules.model import TTSModel
 from modules.predictor import CustomPredictor
 
+# Argument parsing for dataset
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', type=str, default='balanced')
+args = parser.parse_args()
+
 
 ## EXPERIMENTAL PARAMETERS
-dataset_name = 'balanced'
+dataset_name = args.dataset
 n_clusters = 5
 scaler_axis = (0, 1)
 
@@ -51,11 +57,18 @@ weight_decay = 1e-4
 # Loss and metrics
 loss_fn = MaskedMAE()
 
-## LOAD DATASET
+## READY DATASET
 base_path = os.getcwd()
 data_path = os.path.join(base_path, 'data', 'synthetic')
 dataset_path = os.path.join(data_path, dataset_name)
-dataset = SyntheticSpatioTemporalDataset(load_from = dataset_path)
+dataset_params_path = os.path.join(base_path,
+                                   'dataset_params',
+                                   dataset_name,  
+                                   'dataset_params.npy')
+
+dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
+
+# Setup dataset
 window = 16
 horizon = 1
 covariates = None
