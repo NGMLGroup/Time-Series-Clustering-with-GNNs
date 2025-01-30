@@ -8,10 +8,10 @@ To do list:
 
 Implementation of...
 
-Contains code for synthetic data generation, adjacency construction, layers and 
-model, and a script for reproducing the results of the synthetic data 
+Contains code for synthetic data generation, adjacency construction, layers and
+model, and a script for reproducing the results of the synthetic data
 experiment.
- 
+
  ## Python prerequisites
  The implementation is done in Python 3.12.8 with [Pytorch](https://pytorch.org/) 2.5.1 and [Pytorch Geometric](https://pytorch-geometric.readthedocs.io/) 2.6.1 (with all optional dependencies). Moreover, [Torch Spatiotemporal](https://torch-spatiotemporal.readthedocs.io/) 0.9.4 is used heavily for the implementation of the spatio-temporal GNN model, the synthetic data generation, and training of the model. In full, the code is verified for the following packages with dependencies:
 
@@ -21,9 +21,9 @@ experiment.
     torchaudio=2.5.1
     torch-geometric=2.6.1
     pyg_lib=0.4.0
-    torch_scatter=2.1.2 
-    torch_sparse=0.6.18 
-    torch_cluster=1.6.3 
+    torch_scatter=2.1.2
+    torch_sparse=0.6.18
+    torch_cluster=1.6.3
     torch_spline_conv=1.2.2
     torch-spatiotemporal=0.9.4
     pygsp=0.5.1
@@ -68,6 +68,7 @@ The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, 
 
 
  ## Adjacency construction
+ The adjacency matrix construction methods used in the real world data experiment is given in
+ `adj_construction.py` in the `modules` folder. At the end of the script is an example of how to apply the function using the `Elergone` dataset from Torch Spatiotemporal.
 
  ## Citation
-

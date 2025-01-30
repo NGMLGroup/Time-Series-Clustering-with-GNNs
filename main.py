@@ -20,6 +20,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='balanced')
 args = parser.parse_args()
 
+# Dict of auxliary loss weights
+loss_weights = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
+                'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
+                'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
+
 
 ## EXPERIMENTAL PARAMETERS
 dataset_name = args.dataset
@@ -40,8 +45,12 @@ n_pool_units = n_clusters
 n_latent_channels = 1
 pool_method = 'mincut'
 softmax_temp = 1.0
-topo_w = 0.1
-qual_w = 0.1
+
+if dataset_name in loss_weights.keys():
+    topo_w, qual_w = loss_weights[dataset_name]
+else:
+    topo_w = 0.1
+    qual_w = 0.1
 
 # Training parameters
 n_epochs = 250
@@ -63,7 +72,7 @@ data_path = os.path.join(base_path, 'data', 'synthetic')
 dataset_path = os.path.join(data_path, dataset_name)
 dataset_params_path = os.path.join(base_path,
                                    'dataset_params',
-                                   dataset_name,  
+                                   dataset_name,
                                    'dataset_params.npy')
 
 dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
@@ -156,16 +165,16 @@ predictor = CustomPredictor(
 )
 
 ## TRAINING
-logger = None
 trainer = pl.Trainer(max_epochs=n_epochs,
-                    logger=logger,
+                    logger=False,
                     devices="auto",
                     accelerator="gpu" if torch.cuda.is_available() else "cpu",
                     limit_train_batches=100,
                     limit_val_batches=50,
                     callbacks=None,
                     gradient_clip_val=gradient_clip_val,
-                    gradient_clip_algorithm='norm')
+                    gradient_clip_algorithm='norm',
+                    enable_checkpointing=False)
 trainer.fit(predictor, datamodule=dm)
 
 ## EVALUATION
