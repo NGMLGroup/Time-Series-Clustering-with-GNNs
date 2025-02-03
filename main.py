@@ -70,9 +70,7 @@ loss_fn = MaskedMAE()
 base_path = os.getcwd()
 data_path = os.path.join(base_path, 'data', 'synthetic')
 dataset_path = os.path.join(data_path, dataset_name)
-dataset_params_path = os.path.join(base_path,
-                                   'dataset_params',
-                                   dataset_name,
+dataset_params_path = os.path.join(dataset_path,
                                    'dataset_params.npy')
 
 dataset = setup_dataset_with_params(dataset_params_path, dataset_path)

@@ -1,7 +1,3 @@
-# Content of data folder
-data/*
-!data/.gitkeep
-
 # Content of logs folder
 lightning_logs/
 

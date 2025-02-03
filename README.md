@@ -2,8 +2,8 @@
 
 To do list:
 
-- [ ] Maybe remove all forms of logging
 - [ ] Update code for newest version of tsl
+- [ ] Add citation guidelines
 
 
 Implementation of...
@@ -50,7 +50,7 @@ from data_generation.synth_data import SyntheticSpatioTemporalDataset
 dataset = SyntheticSpatioTemporalDataset(load_from='{path_to_data}')
 ```
 
-Files containing the parameters used to generate the different synthetic datasets are found in the `data_params` folder. The parameters are saved as numpy files and can be used to setup the data as follows:
+Numpy files containing the parameters used to generate the different synthetic datasets can be found at `data/synthetic/{dataset_name}/dataset_params.npy`. These parameters can be used to generate the data as follows:
 
 ```python
 from data_generation.synth_data import setup_dataset_with_params
@@ -69,6 +69,6 @@ The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, 
 
  ## Adjacency construction
  The adjacency matrix construction methods used in the real world data experiment is given in
- `adj_construction.py` in the `modules` folder. At the end of the script is an example of how to apply the function using the `Elergone` dataset from Torch Spatiotemporal.
+ `adj_construction.py` in the `modules` folder. At the end of this script is an example of how to apply the function, using the `Elergone` dataset from Torch Spatiotemporal.
 
  ## Citation

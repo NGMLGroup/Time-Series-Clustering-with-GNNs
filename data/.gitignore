@@ -1,0 +1,6 @@
+*
+!synthetic/
+!synthetic/*/
+!synthetic/*/dataset_params.npy
+
+!.gitignore
