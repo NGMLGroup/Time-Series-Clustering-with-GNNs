@@ -2,8 +2,10 @@
 
 To do list:
 
-- [ ] Update code for newest version of tsl
+- [ ] Maybe update code for newest version of tsl
 - [ ] Add citation guidelines
+- [ ] Maybe try to reduce the number of packages to the minimum required
+- [ ] Add paper name plus links to paper
 
 
 Implementation of...
@@ -13,7 +15,7 @@ model, and a script for reproducing the results of the synthetic data
 experiment.
 
  ## Python prerequisites
- The implementation is done in Python 3.12.8 with [Pytorch](https://pytorch.org/) 2.5.1 and [Pytorch Geometric](https://pytorch-geometric.readthedocs.io/) 2.6.1 (with all optional dependencies). Moreover, [Torch Spatiotemporal](https://torch-spatiotemporal.readthedocs.io/) 0.9.4 is used heavily for the implementation of the spatio-temporal GNN model, the synthetic data generation, and training of the model. In full, the code is verified for the following packages with dependencies:
+ The implementation is done with [Pytorch](https://pytorch.org/) and [Pytorch Geometric](https://pytorch-geometric.readthedocs.io/) (with optional dependencies). Moreover, [Torch Spatiotemporal](https://torch-spatiotemporal.readthedocs.io/) is used heavily for the implementation of the spatio-temporal GNN model, the synthetic data generation, and training of the model. In full, the code is verified for the following packages with dependencies:
 
     python=3.12.8
     torch=2.5.1

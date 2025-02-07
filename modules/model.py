@@ -9,6 +9,44 @@ from .layers import GNNEncoder, PoolingLayerWithStaticAssignments, DilatedTCN
 from .utils import softmax_with_temperature, straight_through_softmax
 
 class TTSModel(torch.nn.Module):
+    """Time Then Space STGNN model.
+    Args:
+        input_size : int
+            Number of input features/channels.
+        exog_size : int
+            Number of exogenous features (covariates).
+        hidden_size : int
+            Number of hidden units.
+        temporal_layers : int
+            Number of layers in the temporal encoder.
+        kernel_size : int
+            Size of the kernel in the temporal encoder.
+        dilation : int
+            Dilation factor for the temporal encoder.
+        exponential_dilation : bool
+            Whether to use exponential dilation.
+        skip_connection : bool
+            Whether to use skip connections in the temporal encoder.
+        gcn_layers : int
+            Number of layers in the graph convolutional encoder.
+        n_nodes : int
+            Number of nodes in the graph.
+        n_clusters : int
+            Number of clusters in the pooling layer.
+        topo_w : float
+            Weight of the topological loss.
+        qual_w : float
+            Weight of the quality loss.
+        horizon : int
+            Prediction horizon.
+        pool_method : str
+            Pooling method (pooling loss type).
+        unpool_softmax : str
+            Softmax type applied during unpooling (forward pass).
+            Options: 'temperature', 'straight_through'.
+        softmax_temp : float
+            Initial softmax temperature.
+    """
     def __init__(self,
                  input_size,
                  exog_size,
@@ -29,46 +67,6 @@ class TTSModel(torch.nn.Module):
                  softmax_temp = 1.
                  ):
         super(TTSModel, self).__init__()
-
-        """
-        Time Then Space STGNN model.
-        Args:
-            input_size : int
-                Number of input features/channels.
-            exog_size : int
-                Number of exogenous features (covariates).
-            hidden_size : int
-                Number of hidden units.
-            temporal_layers : int
-                Number of layers in the temporal encoder.
-            kernel_size : int
-                Size of the kernel in the temporal encoder.
-            dilation : int
-                Dilation factor for the temporal encoder.
-            exponential_dilation : bool
-                Whether to use exponential dilation.
-            skip_connection : bool
-                Whether to use skip connections in the temporal encoder.
-            gcn_layers : int
-                Number of layers in the graph convolutional encoder.
-            n_nodes : int
-                Number of nodes in the graph.
-            n_clusters : int
-                Number of clusters in the pooling layer.
-            topo_w : float
-                Weight of the topological loss.
-            qual_w : float
-                Weight of the quality loss.
-            horizon : int
-                Prediction horizon.
-            pool_method : str
-                Pooling method (pooling loss type).
-            unpool_softmax : str
-                Softmax type applied during unpooling (forward pass).
-                Options: 'temperature', 'straight_through'.
-            softmax_temp : float
-                Initial softmax temperature.
-        """
 
         if exog_size:
             self.input_encoder = ConditionalBlock(
