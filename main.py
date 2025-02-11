@@ -45,6 +45,8 @@ n_pool_units = n_clusters
 n_latent_channels = 1
 pool_method = 'mincut'
 softmax_temp = 1.0
+temp_step_size = (softmax_temp - 0.01) / 100
+temp_min = 0.01
 
 if dataset_name in loss_weights.keys():
     topo_w, qual_w = loss_weights[dataset_name]
@@ -151,6 +153,8 @@ scheduler_kwargs = {'gamma': 0.5,
 
 # Setup lightning module
 predictor = CustomPredictor(
+    temp_step_size=temp_step_size,
+    temp_min=temp_min,
     model_class=TTSModel,
     model_kwargs=model_kwargs,
     optim_class=optim_class,

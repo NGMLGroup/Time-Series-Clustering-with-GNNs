@@ -4,10 +4,23 @@ from tsl.data import Data
 
 
 class CustomPredictor(Predictor):
+    """Custom predictor for the TTS model. Differences from parent class:
+    - Decrease softmax temperature gradually during training.
+    - Add auxiliary losses to the downstream loss.
 
-    def __init__(self, **kwargs):
+    Args:
+        temp_step_size : float
+            Step size (per epoch) for decreasing the softmax temperature.
+            Default is 0.
+        temp_min : float
+            Minimum allowed value for the softmax temperature. Default is 1e-8.
+    """
+
+    def __init__(self, temp_step_size=0., temp_min=1e-8, **kwargs):
         super().__init__(**kwargs)
-        self.temp_step_size = (self.model.softmax_temp - 0.01) / 100
+
+        self.temp_step_size = temp_step_size
+        self.temp_min = temp_min
 
     def predict_batch(self, batch: Data,
                       preprocess: bool = False,
@@ -122,6 +135,7 @@ class CustomPredictor(Predictor):
     def on_train_epoch_end(self) -> None:
         # Decrease softmax temperature gradually
         self.model.softmax_temp = max(
-                                    0.01,
+                                    self.temp_min,
                                     self.model.softmax_temp -
-                                    self.temp_step_size)
+                                    self.temp_step_size
+                                )
