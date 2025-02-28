@@ -502,7 +502,7 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
             return connectivity
 
 
-def setup_dataset_with_params(dataset_params_path, dataset_path, 
+def setup_dataset_with_params(dataset_params_path, dataset_path,
                               force_generate=False):
     """Setup a synthetic dataset with the given parameters.
     Args:
@@ -518,7 +518,7 @@ def setup_dataset_with_params(dataset_params_path, dataset_path,
     dataset_params = np.load(dataset_params_path, allow_pickle='TRUE').item()
 
     # Determine whether to generate or load the dataset
-    if (os.path.exists(os.path.join(dataset_path, 'series.npz')) 
+    if (os.path.exists(os.path.join(dataset_path, 'series.npz'))
         and not force_generate):
         load_from = dataset_path
         save_to = None
@@ -566,5 +566,5 @@ if __name__ == '__main__':
         sigma_noise=0.6,
         seed=42,
         share_community_weights=True,
-        save_to='../data/synthetic/balanced',
+        save_to='../../datasets/synthetic/balanced',
     )

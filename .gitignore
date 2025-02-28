@@ -1,6 +1,7 @@
-data/**
-!data/**/
-!data/**/dataset_params.npy
+datasets/**
+!datasets/**/
+!datasets/**/dataset_params.npy
+!datasets/**/subset_idx.npy
 
 # Content of logs folder
 lightning_logs/

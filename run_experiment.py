@@ -11,25 +11,57 @@ from sklearn.metrics.cluster import (normalized_mutual_info_score,
 from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
-from data_generation.synth_data import setup_dataset_with_params
-from modules.model import TTSModel
-from modules.predictor import CustomPredictor
+from source.data import (setup_dataset_with_params,
+                         #FilteredCER,
+                         construct_adjacency)
+from source.modules import TTSModel
+from source.modules import CustomPredictor
+
+# Device setup
+accelerator = (
+    "cuda" if torch.cuda.is_available() else
+    "mps" if torch.backends.mps.is_available() else
+    "cpu"
+)
 
 # Argument parsing for dataset
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='balanced')
+parser.add_argument('--n_clusters', type=int, default=5)
+parser.add_argument('--adj_type', type=str, default='euclidean')
 args = parser.parse_args()
 
+# Dataset and clustering parameters
+dataset_name = args.dataset
+n_clusters = args.n_clusters
+adj_type = args.adj_type
+scaler_axis = (0, 1)
+
 # Dict of auxliary loss weights
-loss_weights = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
+loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
                 'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
                 'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
 
+loss_weights_cer = {'2': {'correntropy': [0.58, 0.1],
+                                   'euclidean': [0.58, 0.1],
+                                   'full': [2.02, 1.06],
+                                   'identity': [1.06, 0.1],
+                                   'pearson': [2.5, 0.1],
+                                   'random': [0.1, 0.1]},
+                    '10': {'correntropy': [2.5, 0.58],
+                                    'euclidean': [2.5, 0.58],
+                                    'full': [0.1, 1.54],
+                                    'identity': [1.06, 0.1],
+                                    'pearson': [0.1, 0.1],
+                                    'random': [0.1, 0.1]},
+}
 
-## EXPERIMENTAL PARAMETERS
-dataset_name = args.dataset
-n_clusters = 5
-scaler_axis = (0, 1)
+if dataset_name == 'cer':
+    is_cer = True
+    raise ValueError('CER dataset is not yet supported in this script.')
+else:
+    is_cer = False
+
 
 ## HYPERPARAMETERS
 
@@ -48,15 +80,17 @@ softmax_temp = 1.0
 temp_step_size = (softmax_temp - 0.01) / 100
 temp_min = 0.01
 
-if dataset_name in loss_weights.keys():
-    topo_w, qual_w = loss_weights[dataset_name]
+if not is_cer and dataset_name in loss_weights_synth.keys():
+    topo_w, qual_w = loss_weights_synth[dataset_name]
+elif is_cer and str(n_clusters) in loss_weights_cer.keys():
+    topo_w, qual_w = loss_weights_cer[str(n_clusters)][adj_type]
 else:
     topo_w = 0.1
     qual_w = 0.1
 
 # Training parameters
 n_epochs = 250
-batch_size = 16
+batch_size = 16 if not is_cer else 8
 starting_lr = 1e-3
 scale_target = True
 gradient_clip_val = 5
@@ -70,24 +104,51 @@ loss_fn = MaskedMAE()
 
 ## READY DATASET
 base_path = os.getcwd()
-data_path = os.path.join(base_path, 'data', 'synthetic')
-dataset_path = os.path.join(data_path, dataset_name)
-dataset_params_path = os.path.join(dataset_path,
-                                   'dataset_params.npy')
 
-dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
+# Load and setup synthetic dataset
+if not is_cer:
+    dataset_path = os.path.join(base_path, 'datasets', 'synthetic',
+                                dataset_name)
+    dataset_params_path = os.path.join(dataset_path,
+                                    'dataset_params.npy')
 
-# Setup dataset
-window = 16
-horizon = 1
-covariates = None
-X, idx = dataset.numpy(return_idx=True)
-labels = dataset.cluster_index
-adj = dataset.connectivity
-dataset_params = np.load(os.path.join(dataset_path, 'dataset_params.npy'),
-                         allow_pickle='TRUE').item()
-print("Dataset params:")
-pprint.pprint(dataset_params)
+    dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
+
+    window = 16
+    horizon = 1
+    covariates = None
+    X, idx = dataset.numpy(return_idx=True)
+    labels = dataset.cluster_index
+    adj = dataset.connectivity
+    dataset_params = np.load(os.path.join(dataset_path, 'dataset_params.npy'),
+                            allow_pickle='TRUE').item()
+    print("Dataset params:")
+    pprint.pprint(dataset_params)
+
+# Load and setup CER dataset
+else:
+    dataset_path = os.path.join(base_path, 'datasets', 'cer')
+    dataset = FilteredCER(dataset_path,
+                          filtering_args={'THRSH_FILT': 0.0,
+                                          'TCUTOFF': None,
+                                          'MCUTOFF': 0.05},
+                        remove_other=True,
+                        resample_hourly=True)
+    window = 72
+    horizon = 1
+    labels = dataset.codes - 1
+
+    subset_idx = np.load(os.path.join(dataset_path, 'subset_idx.npy'))
+    dataset.target = dataset.target.iloc[:, subset_idx]
+    dataset.mask = dataset.mask[:, subset_idx, :]
+    labels = labels[subset_idx]
+
+    covariates = {'u': dataset.datetime_encoded(['day', 'week', 'year']).values}
+
+    X, idx = dataset.numpy(return_idx=True)
+
+    adj = construct_adjacency(dataset, adj_type=adj_type)
+
 
 print(dataset)
 
@@ -170,7 +231,7 @@ predictor = CustomPredictor(
 trainer = pl.Trainer(max_epochs=n_epochs,
                     logger=False,
                     devices="auto",
-                    accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                    accelerator=accelerator,
                     limit_train_batches=100,
                     limit_val_batches=50,
                     callbacks=None,
@@ -184,7 +245,7 @@ predictor.freeze()
 
 s = predictor.model.pooling_layer.assignments().detach().cpu()
 hard_assignments = np.argmax(s.numpy(), axis=-1)
-cluster_ids, cluster_sizes = np.unique(hard_assignments[-1],
+cluster_ids, cluster_sizes = np.unique(hard_assignments,
                                         return_counts=True)
 print(f'Tot clusters: {len(cluster_ids)}\n'
     f'IDs: {cluster_ids}\n'
