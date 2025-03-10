@@ -293,6 +293,7 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                  sigma_noise=.2,
                  share_community_weights: bool = False,
                  save_to: str = None,
+                 save_params: bool = True,
                  load_from: str = None,
                  seed: int = None,
                  name=None):
@@ -400,7 +401,7 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                                             seed=seed,
                                             name=name)
 
-
+        self.save_params = save_params
         if save_to is not None:
             params_dict = {'num_nodes': num_nodes,
                             'num_communities': num_communities,
@@ -439,9 +440,10 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                             optimal_pred=optimal_pred, mask=mask)
 
         # Save dataset paramameters (as both .npy and .txt)
-        np.save(foldername + '/dataset_params.npy', params_dict)
-        with open(foldername + '/dataset_params.txt', 'w') as f:
-            pprint.pprint(params_dict, stream=f)
+        if self.save_params:
+            np.save(foldername + '/dataset_params.npy', params_dict)
+            with open(foldername + '/dataset_params.txt', 'w') as f:
+                pprint.pprint(params_dict, stream=f)
 
         # Save cluster labels
         np.save(foldername + '/cluster_index.npy', self.cluster_index.numpy())
@@ -540,6 +542,7 @@ def setup_dataset_with_params(dataset_params_path, dataset_path,
         sigma_noise=dataset_params['sigma_noise'],
         share_community_weights=dataset_params['share_community_weights'],
         save_to=save_to,
+        save_params=False,
         load_from=load_from,
         seed=dataset_params['seed']
     )
