@@ -14,6 +14,8 @@ from tsl.datasets import GaussianNoiseSyntheticDataset
 from tsl.nn.layers.graph_convs.gpvar import GraphPolyVAR
 from tsl.ops.connectivity import parse_connectivity
 
+# GPVAR implementation based on the code from
+# https://github.com/Graph-Machine-Learning-Group/taming-local-effects-stgnns
 
 class _SineGPVAR(nn.Module):
     def __init__(self,
@@ -279,6 +281,52 @@ def _erdosrenyi_graph(num_nodes, num_communities, graph_params,
 
 
 class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
+    """
+    Synthetic spatio-temporal dataset with a given graph structure and
+    temporal model.
+    Args:
+        num_nodes : int
+            Number of nodes in the graph.
+        num_communities : int
+            Number of communities in the graph. Equivalent to the number of
+            natural clusters or classes in the graph.
+        num_steps : int
+            Number of time steps in the dataset.
+        global_params : list of list
+            Global parameters of the GPVAR component of the temporal model.
+        series_type : str
+            Type of the temporal model. Can be 'sine_gpvar' or 'arprocess'.
+        graph_type : str
+            Type of the graph. Can be 'mixed_ba' or 'erdosrenyi'.
+        local_params : dict
+            Local parameters of the temporal model. For 'sine_gpvar', it should
+            contain 'amplitude', 'phase', and 'period' as keys. For 'arprocess',
+            it should contain 'ar_weights' as key.
+        graph_params : dict
+            Parameters of the graph. For 'mixed_ba', it should contain 'm0' and
+            'm' as keys. For 'erdosrenyi', it should contain 'p', 'connected',
+            and 'max_iter' as keys.
+        community_prop : torch.Tensor
+            Proportion of nodes in each community. Default is None (balanced
+            partition). Must sum to 1 if provided.
+        local_limits : dict
+            Different limits of local parameters. For 'sine_gpvar', it should
+            contain 'amp_max', 'phase_max', and 'period_max' as keys. For
+            'arprocess', it should contain 'p_max' as key.
+        sigma_noise : float
+            Standard deviation of the Gaussian noise. Default is 0.2.
+        share_community_weights : bool
+            Whether to share the weights/parameters of the temporal model across
+            the different communities. Default is False.
+        save_to : str
+            Path to save the dataset. Default is None.
+        load_from : str
+            Path to load the dataset. Default is None.
+        seed : int
+            Random seed for reproducibility. Default is None.
+        name : str
+            Name of the dataset. Default is None.
+    """
     def __init__(self,
                  num_nodes=None,
                  num_communities=None,
@@ -289,7 +337,7 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
                  local_params=None,
                  graph_params=None,
                  community_prop=None,
-                 local_limits=None, # Different limits of local params
+                 local_limits=None,
                  sigma_noise=.2,
                  share_community_weights: bool = False,
                  save_to: str = None,

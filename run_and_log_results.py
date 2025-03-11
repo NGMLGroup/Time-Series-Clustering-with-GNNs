@@ -13,7 +13,7 @@ from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
 from source.data import (setup_dataset_with_params,
-                         #FilteredCER,
+                        #  FilteredCER,
                          construct_adjacency)
 from source.modules import TTSModel
 from source.modules import CustomPredictor
@@ -253,7 +253,7 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     cs = completeness_score(labels, hard_assignments)
 
     print(f'NMI: {nmi} \nHS: {hs} \nCS: {cs}')
-    
+
     return nmi, hs, cs
 
 
@@ -280,7 +280,7 @@ for n_cluster in n_clusters:
 
 # Initialize a DataFrame to store the results
 results_df = pd.DataFrame(columns=['dataset_name', 'n_clusters', 'adj_type',
-                                    'NMI_mean', 'NMI_std', 'HS_mean', 'HS_std', 
+                                    'NMI_mean', 'NMI_std', 'HS_mean', 'HS_std',
                                     'CS_mean', 'CS_std'])
 
 for config in configs:
@@ -316,5 +316,9 @@ for config in configs:
 # Create results directory
 os.makedirs('results', exist_ok=True)
 
+# Create subdirectory based on experiment choice
+os.makedirs(os.path.join('results', experiment_name), exist_ok=True)
+
 # Save the results to a spreadsheet file
-results_df.to_excel('experiment_results.xlsx', index=False)
+results_df.to_excel(os.path.join('results', experiment_name,
+                                 'experiment_results.xlsx'), index=False)
