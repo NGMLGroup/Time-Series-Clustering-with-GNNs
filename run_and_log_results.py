@@ -108,7 +108,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         dataset_params_path = os.path.join(dataset_path,
                                         'dataset_params.npy')
 
-        dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
+        dataset = setup_dataset_with_params(dataset_params_path, dataset_path,
+                                            force_generate=True)
 
         window = 16
         horizon = 1
@@ -288,11 +289,12 @@ results_df = pd.DataFrame(columns=['dataset_name', 'n_clusters', 'adj_type',
                                     'NMI_mean', 'NMI_std', 'HS_mean', 'HS_std',
                                     'CS_mean', 'CS_std'])
 
+n_runs = 5
 for config in configs:
     nmi_scores = []
     hs_scores = []
     cs_scores = []
-    for _ in range(5):
+    for _ in range(n_runs):
         nmi, hs, cs = run_experiment(config[0], config[1], config[2])
         nmi_scores.append(nmi)
         hs_scores.append(hs)
