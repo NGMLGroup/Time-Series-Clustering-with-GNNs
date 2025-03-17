@@ -127,11 +127,11 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     else:
         dataset_path = os.path.join(base_path, 'datasets', 'cer')
         dataset = FilteredCER(dataset_path,
-                            filtering_args={'THRSH_FILT': 0.0,
-                                            'TCUTOFF': None,
-                                            'MCUTOFF': 0.05},
-                            remove_other=True,
-                            resample_hourly=True)
+                              missing_cutoff=0.05,
+                              corr_threshold=0.0,
+                              time_cutoff=None,
+                              remove_other=True,
+                              resample_hourly=True)
         window = 72
         horizon = 1
         labels = dataset.codes - 1
