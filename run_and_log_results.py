@@ -13,7 +13,7 @@ from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
 from source.data import (setup_dataset_with_params,
-                        #  FilteredCER,
+                         FilteredCER,
                          construct_adjacency)
 from source.modules import TTSModel
 from source.modules import CustomPredictor
@@ -108,7 +108,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         dataset_params_path = os.path.join(dataset_path,
                                         'dataset_params.npy')
 
-        dataset = setup_dataset_with_params(dataset_params_path, dataset_path)
+        dataset = setup_dataset_with_params(dataset_params_path, dataset_path,
+                                            force_generate=True)
 
         window = 16
         horizon = 1
@@ -116,7 +117,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         X, idx = dataset.numpy(return_idx=True)
         labels = dataset.cluster_index
         adj = dataset.connectivity
-        dataset_params = np.load(os.path.join(dataset_path, 'dataset_params.npy'),
+        dataset_params = np.load(os.path.join(dataset_path,
+                                              'dataset_params.npy'),
                                 allow_pickle='TRUE').item()
         print("Dataset params:")
         pprint.pprint(dataset_params)
@@ -139,7 +141,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         dataset.mask = dataset.mask[:, subset_idx, :]
         labels = labels[subset_idx]
 
-        covariates = {'u': dataset.datetime_encoded(['day', 'week', 'year']).values}
+        covariates = {'u': dataset.datetime_encoded(['day', 'week', 'year']
+                                                ).values}
 
         X, idx = dataset.numpy(return_idx=True)
 
@@ -157,7 +160,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
                                         horizon = horizon,
                                         delay = 0,
                                         stride = 1)
-    exog_size = False if covariates is None else torch_dataset.input_map.u.shape[-1]
+    exog_size = (False if covariates is None
+                 else torch_dataset.input_map.u.shape[-1])
     print(torch_dataset)
 
     # Rescale and split the data
@@ -262,12 +266,14 @@ experiment_name = args.experiment
 
 if experiment_name == 'synthetic':
     n_clusters = [5]
-    dataset_names = ['balanced', 'balanced_u', 'mostlyseries', 'mostlygraph', 'onlyseries', 'onlygraph']
+    dataset_names = ['balanced', 'balanced_u', 'mostlyseries', 'mostlygraph',
+                     'onlyseries', 'onlygraph']
     adj_type = ['N/A']
 elif experiment_name == 'cer':
     n_clusters = [2, 10]
     dataset_names = ['cer']
-    adj_type = ['correntropy', 'euclidean', 'full', 'identity', 'pearson', 'random']
+    adj_type = ['correntropy', 'euclidean', 'full', 'identity', 'pearson',
+                'random']
 
 
 
@@ -283,11 +289,12 @@ results_df = pd.DataFrame(columns=['dataset_name', 'n_clusters', 'adj_type',
                                     'NMI_mean', 'NMI_std', 'HS_mean', 'HS_std',
                                     'CS_mean', 'CS_std'])
 
+n_runs = 5
 for config in configs:
     nmi_scores = []
     hs_scores = []
     cs_scores = []
-    for _ in range(5):
+    for _ in range(n_runs):
         nmi, hs, cs = run_experiment(config[0], config[1], config[2])
         nmi_scores.append(nmi)
         hs_scores.append(hs)
@@ -301,7 +308,7 @@ for config in configs:
     cs_std = np.std(cs_scores)
 
     # Log the results
-    results_df = results_df.append({
+    new_row = pd.DataFrame([{
         'dataset_name': config[0],
         'n_clusters': config[1],
         'adj_type': config[2],
@@ -311,7 +318,8 @@ for config in configs:
         'HS_std': hs_std,
         'CS_mean': cs_mean,
         'CS_std': cs_std
-    }, ignore_index=True)
+    }])
+    results_df = pd.concat([results_df, new_row], ignore_index=True)
 
 # Create results directory
 os.makedirs('results', exist_ok=True)
