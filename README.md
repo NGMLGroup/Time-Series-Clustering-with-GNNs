@@ -25,7 +25,8 @@ The repository is structured as follows:
 |   |   |   ├── pooling_functions.py    # Functions for the different pooling methods
 |   |   |   ├── predictor               # Predictor class for training the model
 |   |   |   └── utils.py                # Utility functions
-└── run_experiment.py
+├── run_and_log_results.py              # Script for running and logging results of the experiments
+└── run_experiment.py                   # Minimal example script for training and evaluating the model
 ```
 
 ## 📝 Requirements
