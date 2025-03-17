@@ -320,6 +320,9 @@ class SyntheticSpatioTemporalDataset(GaussianNoiseSyntheticDataset):
             the different communities. Default is False.
         save_to : str
             Path to save the dataset. Default is None.
+        save_params : bool
+            Whether to save the parameters used to generate the dataset.
+            Default is True.
         load_from : str
             Path to load the dataset. Default is None.
         seed : int

@@ -12,7 +12,7 @@ from tsl.data import SpatioTemporalDataset, SpatioTemporalDataModule
 from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
 from source.data import (setup_dataset_with_params,
-                         #FilteredCER,
+                         FilteredCER,
                          construct_adjacency)
 from source.modules import TTSModel
 from source.modules import CustomPredictor
@@ -37,7 +37,7 @@ n_clusters = args.n_clusters
 adj_type = args.adj_type
 scaler_axis = (0, 1)
 
-# Dict of auxliary loss weights
+# Dicts of auxliary loss weights
 loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
                 'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
                 'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
@@ -58,12 +58,11 @@ loss_weights_cer = {'2': {'correntropy': [0.58, 0.1],
 
 if dataset_name == 'cer':
     is_cer = True
-    raise ValueError('CER dataset is not yet supported in this script.')
 else:
     is_cer = False
 
 
-## HYPERPARAMETERS
+## PARAMETERS
 
 # Model parameters
 hidden_size = 16
@@ -129,11 +128,11 @@ if not is_cer:
 else:
     dataset_path = os.path.join(base_path, 'datasets', 'cer')
     dataset = FilteredCER(dataset_path,
-                          filtering_args={'THRSH_FILT': 0.0,
-                                          'TCUTOFF': None,
-                                          'MCUTOFF': 0.05},
-                        remove_other=True,
-                        resample_hourly=True)
+                          missing_cutoff=0.05,
+                          corr_threshold=0.0,
+                          time_cutoff=None,
+                          remove_other=True,
+                          resample_hourly=True)
     window = 72
     horizon = 1
     labels = dataset.codes - 1
