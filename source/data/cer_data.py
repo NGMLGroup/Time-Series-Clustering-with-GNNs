@@ -16,8 +16,6 @@ ID_COL = 'id'
 TARGET_COL = 'load'
 DATETIME_COL = 'datetime'
 SAMPLES_PER_DAY = 48
-AGG_SCALE = 1000
-TEST_LEN = 0.2
 
 
 def parse_date(date):
@@ -32,35 +30,8 @@ def parse_date(date):
 
 
 class FilteredCER(DatetimeDataset):
-    """
-    Filtered CER dataset.
 
-    Args:
-        root : str
-            Root directory where the dataset should be stored.
-        freq : str
-            Frequency of the time series. Default is '30T'.
-        print_dataset_info : bool
-            Whether to print information about the dataset. Default is True.
-        missing_cutoff : float
-            Maximum percentage of missing values allowed in a node. Default is
-            0.05 (5 percent).
-        corr_threshold : float
-            Minimum correlation threshold for filtering nodes (compared to class
-            mean). Default is None which means the threshold is not applied.
-        time_cutoff : int
-            Maximum number of time steps to keep. Default is None which keeps
-            everything.
-        remove_other : bool
-            Whether to remove nodes with `Other` label (code 3). Default is
-            True.
-        resample_hourly : bool
-            Whether to resample the data to hourly frequency. Default is True.
-    """
-
-    # request url at
-    # https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
-    url = None
+    url = None # request url at https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
 
     default_freq = '30T'
 
@@ -68,8 +39,7 @@ class FilteredCER(DatetimeDataset):
                  root=None,
                  freq=None,
                  print_dataset_info=True,
-                 missing_cutoff=0.05,
-                 corr_threshold=None,
+                 missing_threshold=0.05,
                  time_cutoff=None,
                  remove_other=True,
                  resample_hourly=True):
@@ -79,8 +49,7 @@ class FilteredCER(DatetimeDataset):
         else:
             self.root = root
 
-        self.mcutoff = missing_cutoff
-        self.cthresh = corr_threshold
+        self.mthrsh = missing_threshold
         self.tcutoff = time_cutoff
 
         self.print_dataset_info = print_dataset_info
@@ -163,6 +132,12 @@ class FilteredCER(DatetimeDataset):
         mask = ~np.isnan(df.values)
         df = df.fillna(0.)
 
+        if self.print_dataset_info:
+            org_allocs = pd.read_excel(os.path.join(self.root_dir, 'allocations.xlsx'))
+            org_codes = np.array(org_allocs['Code'].to_list())
+            print(f'[Original] residential: {(org_codes==1).sum()}, sme: {(org_codes == 2).sum()}, other: {(org_codes == 3).sum()}')
+            print(f'[Original] Number of time steps: {df.shape[0]}')
+
         # Resample to hourly data
         if self.resample_hourly:
             df = df.resample('H').mean()
@@ -181,10 +156,9 @@ class FilteredCER(DatetimeDataset):
             self.tcutoff = mask.shape[0]
 
         # Remove nodes with too many missing values
-        idx_keep = mask.sum(axis=0) > int((1.0-self.mcutoff)*self.tcutoff)
+        idx_keep = mask.sum(axis=0) > int((1.0-self.mthrsh)*self.tcutoff)
         if self.print_dataset_info:
-            print(f"Dropping {(idx_keep==False).sum()} nodes "
-                  f"({(idx_keep==False).sum()/mask.shape[1]*100:.2f}%)")
+            print(f"Dropping {(idx_keep==False).sum()} nodes ({(idx_keep==False).sum()/mask.shape[1]*100:.2f}%)")
         mask = mask[:,idx_keep]
         df = df.loc[:,idx_keep]
 
@@ -195,40 +169,24 @@ class FilteredCER(DatetimeDataset):
         codes = np.array(allocs['Code'].to_list())[id_alloc]
         id_ds = np.array(id_ds)
 
-        # Divide data by code
-        X = df.values
-        res = X[:,codes==1]
-        id_res = id_ds[codes==1]
-        sme = X[:,codes==2]
+        # Divide data by codes
+        id_residential = id_ds[codes==1]
         id_sme = id_ds[codes==2]
-        other = X[:,codes==3]
         id_other = id_ds[codes==3]
 
+        # Filter out other nodes (optional)
+        id_other_filt = np.array([]) if self.remove_other else id_other
         if self.print_dataset_info:
-            print(f'[Original] residential: {id_res.shape[0]}, '
-                  f'sme: {id_sme.shape[0]}, other: {id_other.shape[0]}')
-
-        # Filter data
-        if self.cthresh is not None:
-            id_res_filt = self.corr_filter(res, id_res, self.cthresh)
-            id_sme_filt = self.corr_filter(sme, id_sme, self.cthresh)
-            id_other_filt = np.array([]) if self.remove_other else \
-                self.corr_filter(other, id_other, self.cthresh)
-        else:
-            id_res_filt = id_res
-            id_sme_filt = id_sme
-            id_other_filt = id_other
+            print(f'Removed {id_other.shape[0]} other nodes')
 
         if self.print_dataset_info:
-            print(f'[Filtered] residential: {id_res_filt.shape[0]} '
-                  f'({id_res_filt.shape[0]/id_res.shape[0]*100:.1f} %), ')
-            print(f'sme: {id_sme_filt.shape[0]} '
-                  f'({id_sme_filt.shape[0]/id_sme.shape[0]*100:.1f} %), ')
-            print(f'other: {id_other_filt.shape[0]} '
-                  f'({id_other_filt.shape[0]/id_other.shape[0]*100:.1f} %)')
+            print(f'[Filtered] residential: {id_residential.shape[0]} ({id_residential.shape[0]/id_residential.shape[0]*100:.1f} %), '
+                f'sme: {id_sme.shape[0]} ({id_sme.shape[0]/id_sme.shape[0]*100:.1f} %), '
+                f'other: {id_other_filt.shape[0]} ({id_other_filt.shape[0]/id_other.shape[0]*100:.1f} %)')
+            print(f'[Filtered] Number of time steps: {df.shape[0]}')
 
         # Reindex stuff
-        id_filt = list(np.hstack((id_res_filt, id_sme_filt, id_other_filt)))
+        id_filt = list(np.hstack((id_residential, id_sme, id_other_filt)))
         col_idx = [df.columns.get_loc(i) for i in id_filt]
         df = df.reindex(columns=id_filt)
         mask = mask[:, col_idx] if mask is not None else None
@@ -240,31 +198,7 @@ class FilteredCER(DatetimeDataset):
         self.maybe_build()
         return pd.read_hdf(self.required_files_paths[0])
 
-    def pearsonr_2D(self, x, y):
-        """
-        Computes pearson correlation coefficient
-        where x is a 1D and y a 2D array
-        """
-        upper = np.sum((x - np.mean(x)) * (y - np.mean(y, axis=1)[:,None]),
-                       axis=1)
-        lower = (np.sqrt(np.sum(np.power(x - np.mean(x), 2)) *
-                         np.sum(np.power(y - np.mean(y, axis=1)[:,None], 2),
-                                axis=1)
-                    )
-        )
-        rho = upper / lower
-        return rho
-
-    def corr_filter(self, X, ids, thresh=None):
-        """
-        Filter data based on correlation with mean
-        """
-        x_mean = X.mean(axis=1).squeeze()
-        corrs = self.pearsonr_2D(x_mean, X.T)
-        ids = ids[corrs>thresh]
-        return ids
-
 if __name__ == '__main__':
-    root = os.path.join(os.getcwd(), '..', 'data', 'cer')
+    root = os.path.join(os.getcwd(), '..', '..', 'datasets', 'cer')
     cer = FilteredCER(root=root)
     print(cer)

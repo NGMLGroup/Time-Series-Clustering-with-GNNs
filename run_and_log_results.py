@@ -57,7 +57,6 @@ def run_experiment(dataset_name, n_clusters, adj_type):
 
     if dataset_name == 'cer':
         is_cer = True
-        raise ValueError('CER dataset is not yet supported in this script.')
     else:
         is_cer = False
 
@@ -127,11 +126,9 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     else:
         dataset_path = os.path.join(base_path, 'datasets', 'cer')
         dataset = FilteredCER(dataset_path,
-                              missing_cutoff=0.05,
-                              corr_threshold=0.0,
-                              time_cutoff=None,
-                              remove_other=True,
-                              resample_hourly=True)
+                            missing_threshold=0.05,
+                            remove_other=True,
+                            resample_hourly=True)
         window = 72
         horizon = 1
         labels = dataset.codes - 1
@@ -270,7 +267,7 @@ if experiment_name == 'synthetic':
                      'onlyseries', 'onlygraph']
     adj_type = ['N/A']
 elif experiment_name == 'cer':
-    n_clusters = [2, 10]
+    n_clusters = [2, 5]
     dataset_names = ['cer']
     adj_type = ['correntropy', 'euclidean', 'full', 'identity', 'pearson',
                 'random']

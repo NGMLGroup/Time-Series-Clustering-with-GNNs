@@ -13,6 +13,7 @@ from tsl.data.preprocessing import StandardScaler
 from tsl.metrics.torch import MaskedMAE
 from source.data import (setup_dataset_with_params,
                          FilteredCER,
+                         FilteredCER,
                          construct_adjacency)
 from source.modules import TTSModel
 from source.modules import CustomPredictor
@@ -128,11 +129,9 @@ if not is_cer:
 else:
     dataset_path = os.path.join(base_path, 'datasets', 'cer')
     dataset = FilteredCER(dataset_path,
-                          missing_cutoff=0.05,
-                          corr_threshold=0.0,
-                          time_cutoff=None,
-                          remove_other=True,
-                          resample_hourly=True)
+                        missing_threshold=0.05,
+                        remove_other=True,
+                        resample_hourly=True)
     window = 72
     horizon = 1
     labels = dataset.codes - 1
