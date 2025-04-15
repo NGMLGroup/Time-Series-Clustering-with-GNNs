@@ -1,4 +1,4 @@
-# On-Time-Series-Clustering-with-GNNs
+# Time-Series-Clustering-with-GNNs
 
 This repository contains the code for the reproducibility of the experiments presented in the paper "On Time Series Clustering with Graph Neural Networks".
 To do list:
