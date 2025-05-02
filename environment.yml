@@ -1,0 +1,19 @@
+name: tsl
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - torch==2.5
+      - torch-geometric==2.6
+      - pyg_lib
+      - torch_scatter
+      - torch_sparse
+      - torch_cluster
+      - torch_spline_conv
+      - https://data.pyg.org/whl/torch-2.5.0+cu118.html
+      - torch-spatiotemporal==0.9.4
+      - pygsp==0.5.1
+      - matplotlib==3.10.0
+      - openpyxl==3.1.5
