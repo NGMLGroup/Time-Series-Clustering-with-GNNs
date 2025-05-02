@@ -1,44 +1,7 @@
 # Time-Series-Clustering-with-GNNs
 
 This repository contains the code for the reproducibility of the experiments presented in the paper "On Time Series Clustering with Graph Neural Networks".
-To do list:
 
-- Maybe update code for newest version of tsl
-- Update loss coefficients for cer dataset
-- Add citation guidelines
-- Maybe try to reduce the number of packages to the minimum required
-- Add paper name plus links to paper
-
-
-# {Paper Title} ({Venue} {Year})
-
-[![ICLR](https://img.shields.io/badge/{Venue}-{Year}-blue.svg?)]({Link to paper page})
-[![paper](https://custom-icon-badges.demolab.com/badge/paper-pdf-green.svg?logo=file-text&logoSource=feather&logoColor=white)]({Link to the paper})
-
-[![poster](https://custom-icon-badges.demolab.com/badge/poster-pdf-orange.svg?logo=note&logoSource=feather&logoColor=white)]({Link to the poster/presentation})
-[![arXiv](https://img.shields.io/badge/arXiv-{Arxiv.ID}-b31b1b.svg?)]({Link to Arixv})
-
-This repository contains the code for the reproducibility of the experiments presented in the paper "{Paper Title}" ({Venue} {Year}). {Paper TL;DR}.
-
-**Authors**: [Author 1]({Author1 webpage}), [Author 2]({Author2 webpage})
-
-Implementation of...
-
-Contains code for synthetic data generation, adjacency construction, layers and
-model, and a script for reproducing the results of the synthetic data
-experiment.
-
----
-
-## ⚡ TL;DR
-
-{Paper description}.
-
-<!-- p align=center>
-	<img src="./overview.png" alt="{Image description}"/>
-</p -->
-
----
 
 ## 📂 Repository structure
 
@@ -72,8 +35,6 @@ The implementation is done with [Pytorch](https://pytorch.org/) and [Pytorch Geo
 
     python=3.12.8
     torch=2.5.1
-    torchvision=0.20.1
-    torchaudio=2.5.1
     torch-geometric=2.6.1
     pyg_lib=0.4.0
     torch_scatter=2.1.2

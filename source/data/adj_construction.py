@@ -133,7 +133,3 @@ if __name__ == '__main__':
     dataset = Elergone(root='./../data/elergone', freq='15min')
     adj = construct_adjacency(dataset, adj_type='pearson')
     print(adj)
-
-    # NOTE: connected is set to False for 'random' since Elergone has fewer
-    # number of nodes than CER, so it takes many more trials to generate a
-    # connected graph when p=0.005.
