@@ -46,6 +46,14 @@ The implementation is done with [Pytorch](https://pytorch.org/) and [Pytorch Geo
     matplotlib=3.10.0
     openpyxl=3.1.5
 
+The file `environment.yml` is provided for easy installation of the required packages (checked for Linux system with Nvidia GPU). The environment can be created with the following command:
+
+```bash
+conda env create -f environment.yml
+```
+
+To change to a cpu configuration or different CUDA version, modify the two links at the bottom of the .yml file.
+
 ## 📦 Datasets
 
 The datasets are stored in the folder `datasets`, which by default is empty with the exception of files to reproduce the synthetic data generation and the subset sampling of CER.
