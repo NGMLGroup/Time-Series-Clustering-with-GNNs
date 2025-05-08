@@ -2,19 +2,15 @@ name: ts_cluster
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python=3.12.8
   - pip
   - pip:
       - torch==2.5.1
       - torch_geometric==2.6.1
-      - pyg_lib
-      - torch_scatter
-      - torch_sparse
-      - torch_cluster
-      - torch_spline_conv
+      - torch_scatter==2.1.2
+      - torch_sparse==0.6.18
       - torch-spatiotemporal==0.9.4
       - pygsp==0.5.1
-      - matplotlib==3.10.0
       - openpyxl==3.1.5
       - --extra-index-url https://download.pytorch.org/whl/cu118
       - -f https://data.pyg.org/whl/torch-2.5.0+cu118.html

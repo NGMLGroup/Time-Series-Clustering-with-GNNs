@@ -35,7 +35,7 @@ class FilteredCER(DatetimeDataset):
     # https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
     url = None
 
-    default_freq = '30T'
+    default_freq = '30min'
 
     def __init__(self,
                  root=None,
@@ -149,7 +149,7 @@ class FilteredCER(DatetimeDataset):
 
         # Resample to hourly data
         if self.resample_hourly:
-            df = df.resample('H').mean()
+            df = df.resample('h').mean()
             temp_mask = np.zeros((df.shape[0], df.shape[1]), dtype=bool)
             temp_mask[0, :] = mask[0, :]
             temp_mask[1:, :] = np.logical_and(mask[::2, :], mask[1::2, :])

@@ -36,14 +36,10 @@ The implementation is done with [Pytorch](https://pytorch.org/) and [Pytorch Geo
     python=3.12.8
     torch=2.5.1
     torch-geometric=2.6.1
-    pyg_lib=0.4.0
     torch_scatter=2.1.2
     torch_sparse=0.6.18
-    torch_cluster=1.6.3
-    torch_spline_conv=1.2.2
     torch-spatiotemporal=0.9.4
     pygsp=0.5.1
-    matplotlib=3.10.0
     openpyxl=3.1.5
 
 The file `environment.yml` is provided for easy installation of the required packages (checked for Linux system with Nvidia GPU). The environment can be created with the following command:
