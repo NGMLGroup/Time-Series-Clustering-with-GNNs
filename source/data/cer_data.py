@@ -31,7 +31,9 @@ def parse_date(date):
 
 class FilteredCER(DatetimeDataset):
 
-    url = None # request url at https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
+    # request url at
+    # https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
+    url = None
 
     default_freq = '30T'
 
@@ -76,6 +78,10 @@ class FilteredCER(DatetimeDataset):
         return ['cer_en.h5', 'allocations.xlsx', 'manifest.docx']
 
     def download(self) -> None:
+        if self.url is None:
+            raise ValueError('Can not download dataset because ' \
+                        'url is not set in the class definition.')
+
         path = download_url(self.url, self.root_dir)
         extract_zip(path, self.root_dir)
         os.unlink(path)
@@ -133,9 +139,12 @@ class FilteredCER(DatetimeDataset):
         df = df.fillna(0.)
 
         if self.print_dataset_info:
-            org_allocs = pd.read_excel(os.path.join(self.root_dir, 'allocations.xlsx'))
+            org_allocs = pd.read_excel(os.path.join(self.root_dir,
+                                                    'allocations.xlsx'))
             org_codes = np.array(org_allocs['Code'].to_list())
-            print(f'[Original] residential: {(org_codes==1).sum()}, sme: {(org_codes == 2).sum()}, other: {(org_codes == 3).sum()}')
+            print(f'[Original] residential: {(org_codes==1).sum()}, ' \
+                  f'sme: {(org_codes == 2).sum()}, ' \
+                  f'other: {(org_codes == 3).sum()}')
             print(f'[Original] Number of time steps: {df.shape[0]}')
 
         # Resample to hourly data
@@ -158,7 +167,8 @@ class FilteredCER(DatetimeDataset):
         # Remove nodes with too many missing values
         idx_keep = mask.sum(axis=0) > int((1.0-self.mthrsh)*self.tcutoff)
         if self.print_dataset_info:
-            print(f"Dropping {(idx_keep==False).sum()} nodes ({(idx_keep==False).sum()/mask.shape[1]*100:.2f}%)")
+            print(f'Dropping {(idx_keep==False).sum()} nodes ' \
+                  f'({(idx_keep==False).sum()/mask.shape[1]*100:.2f}%)')
         mask = mask[:,idx_keep]
         df = df.loc[:,idx_keep]
 
@@ -170,7 +180,7 @@ class FilteredCER(DatetimeDataset):
         id_ds = np.array(id_ds)
 
         # Divide data by codes
-        id_residential = id_ds[codes==1]
+        id_resid = id_ds[codes==1]
         id_sme = id_ds[codes==2]
         id_other = id_ds[codes==3]
 
@@ -180,13 +190,16 @@ class FilteredCER(DatetimeDataset):
             print(f'Removed {id_other.shape[0]} other nodes')
 
         if self.print_dataset_info:
-            print(f'[Filtered] residential: {id_residential.shape[0]} ({id_residential.shape[0]/id_residential.shape[0]*100:.1f} %), '
-                f'sme: {id_sme.shape[0]} ({id_sme.shape[0]/id_sme.shape[0]*100:.1f} %), '
-                f'other: {id_other_filt.shape[0]} ({id_other_filt.shape[0]/id_other.shape[0]*100:.1f} %)')
+            print(f'[Filtered] residential: {id_resid.shape[0]} ' \
+                  f'({id_resid.shape[0]/id_resid.shape[0]*100:.1f} %), '
+                  f'sme: {id_sme.shape[0]} ' \
+                  f'({id_sme.shape[0]/id_sme.shape[0]*100:.1f} %), '
+                  f'other: {id_other_filt.shape[0]} ' \
+                  f'({id_other_filt.shape[0]/id_other.shape[0]*100:.1f} %)')
             print(f'[Filtered] Number of time steps: {df.shape[0]}')
 
         # Reindex stuff
-        id_filt = list(np.hstack((id_residential, id_sme, id_other_filt)))
+        id_filt = list(np.hstack((id_resid, id_sme, id_other_filt)))
         col_idx = [df.columns.get_loc(i) for i in id_filt]
         df = df.reindex(columns=id_filt)
         mask = mask[:, col_idx] if mask is not None else None
