@@ -85,24 +85,24 @@ The adjacency matrix construction methods used with CER is given in
  `adj_construction.py` in the `source/data` directory. At the end of the script is an example of how to apply the function, using the `Elergone` dataset from Torch Spatiotemporal.
 
 
-
-
 ## 🧪 Experiments
 
-The training and evaluation of the model (with MinCutPool) can be done by running the file `run_experiment.py`. The script is very minimal and executes only one run with the given configuration and prints the clustering metrics. By default the script is set to execute the experiment on the Balanced dataset. The script can be run with different configurations with the following command:
+The training and evaluation of the model (with MinCutPool) can be executed by running the file `run_experiment.py`. The script is very minimal and executes only one run with the given configuration and prints the clustering metrics. By default the script is set to execute the experiment on the Balanced dataset. The script can be run with different configurations with the following command:
 
 ```bash
 python main.py --dataset={dataset_name} --n_clusters={n_clusters} --adj_type={adjacency construction method}
 ```
 
+Synthetic data generation is handled automatically in the script, so the dataset will be generated if it does not exist.
+
 The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, `mostlygraph`, `onlyseries`, and `onlygraph`.
 
 The following adjacency types (for CER) are available: `identity`, `full`, `random`, `euclidean`, `pearson`, and `correntropy`.
 
-The full experiments with logging of metrics can be run by executing the `run_and_log_results.py` script with the following command:
+Alternatively, a complete training session with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
 
 ```bash
 python run_and_log_results.py --experiment={experiment_name}
 ```
 
-where the available experiments are `synthetic` and `cer`.
+where the available experiments are `synthetic` and `cer`. Test set results are saved in the `results` folder.

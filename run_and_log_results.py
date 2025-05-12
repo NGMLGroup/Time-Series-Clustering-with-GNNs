@@ -108,7 +108,7 @@ def run_experiment(dataset_name, n_clusters, adj_type):
                                         'dataset_params.npy')
 
         dataset = setup_dataset_with_params(dataset_params_path, dataset_path,
-                                            force_generate=True)
+                                            force_generate=False)
 
         window = 16
         horizon = 1
