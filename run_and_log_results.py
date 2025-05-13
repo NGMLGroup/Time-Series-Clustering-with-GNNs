@@ -45,7 +45,7 @@ def run_experiment(dataset_name, n_clusters, adj_type):
                                     'identity': [1.06, 0.1],
                                     'pearson': [2.5, 0.1],
                                     'random': [0.1, 0.1]},
-                        '10': {'correntropy': [2.5, 0.58],
+                        '5': {'correntropy': [2.5, 0.58],
                                         'euclidean': [1.06, 0.10],
                                         'full': [1.06, 2.50],
                                         'identity': [2.02, 0.1],
