@@ -31,39 +31,56 @@ parser.add_argument('--experiment', type=str, default='synthetic')
 args = parser.parse_args()
 
 
-
 def run_experiment(dataset_name, n_clusters, adj_type):
 
-    # Dict of auxliary loss weights
-    loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
-                    'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
-                    'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
+    # # Dict of auxliary loss weights
+    # loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
+    #                 'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
+    #                 'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
 
-    loss_weights_cer = {'2': {'correntropy': [2.50, 0.1],
-                                    'euclidean': [2.02, 0.1],
-                                    'full': [2.50, 0.58],
-                                    'identity': [1.06, 0.1],
-                                    'pearson': [2.5, 0.1],
-                                    'random': [0.1, 0.1]},
-                        '5': {'correntropy': [2.5, 0.58],
-                                        'euclidean': [1.06, 0.10],
-                                        'full': [1.06, 2.50],
-                                        'identity': [2.02, 0.1],
-                                        'pearson': [0.58, 0.1],
-                                        'random': [0.1, 1.54]},
-    }
+    # loss_weights_cer = {'2': {'correntropy': [2.50, 0.1],
+    #                                 'euclidean': [2.02, 0.1],
+    #                                 'full': [2.50, 0.58],
+    #                                 'identity': [1.06, 0.1],
+    #                                 'pearson': [2.5, 0.1],
+    #                                 'random': [0.1, 0.1]},
+    #                     '5': {'correntropy': [2.5, 0.58],
+    #                                     'euclidean': [1.06, 0.10],
+    #                                     'full': [1.06, 2.50],
+    #                                     'identity': [2.02, 0.1],
+    #                                     'pearson': [0.58, 0.1],
+    #                                     'random': [0.1, 1.54]},
+    # }
 
     scaler_axis = (0, 1)
+    base_path = os.getcwd()
 
+    ## PARAMETERS
+
+    # Load in loss weights
     if dataset_name == 'cer':
-        is_cer = True
+        coeff_path = os.path.join(base_path, 'datasets', 'cer',
+                            'loss_coeffs.csv')
+        loss_weights = pd.read_csv(coeff_path)
+
+        # Extract based on adj_type and n_clusters
+        topo_w, qual_w = loss_weights.loc[
+            (loss_weights['adj_type'] == adj_type) &
+            (loss_weights['n_clusters'] == n_clusters)
+            ][['topo_w', 'qual_w']].values[0]
+
     else:
-        is_cer = False
+        coeff_path = os.path.join(base_path, 'datasets', 'synthetic',
+                                'loss_coeffs.csv')
+        loss_weights = pd.read_csv(coeff_path)
 
+        # Extract based on pool_loss and dataset_name
+        topo_w, qual_w = loss_weights.loc[
+            (loss_weights['pool_loss'] == 'mincut') &
+            (loss_weights['dataset_name'] == dataset_name)
+            ][['topo_w', 'qual_w']].values[0]
 
-    ## HYPERPARAMETERS
-
-    # Model parameters
+    # Other model parameters
     hidden_size = 16
     temporal_layers = 2
     kernel_size = 3
@@ -76,17 +93,17 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     temp_step_size = (softmax_temp - 0.01) / 100
     temp_min = 0.01
 
-    if not is_cer and dataset_name in loss_weights_synth.keys():
-        topo_w, qual_w = loss_weights_synth[dataset_name]
-    elif is_cer and str(n_clusters) in loss_weights_cer.keys():
-        topo_w, qual_w = loss_weights_cer[str(n_clusters)][adj_type]
-    else:
-        topo_w = 0.1
-        qual_w = 0.1
+    # if not is_cer and dataset_name in loss_weights_synth.keys():
+    #     topo_w, qual_w = loss_weights_synth[dataset_name]
+    # elif is_cer and str(n_clusters) in loss_weights_cer.keys():
+    #     topo_w, qual_w = loss_weights_cer[str(n_clusters)][adj_type]
+    # else:
+    #     topo_w = 0.1
+    #     qual_w = 0.1
 
     # Training parameters
     n_epochs = 250
-    batch_size = 16 if not is_cer else 8
+    batch_size = 16 if dataset_name != 'cer' else 8
     starting_lr = 1e-3
     scale_target = True
     gradient_clip_val = 5
@@ -97,11 +114,11 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     # Loss and metrics
     loss_fn = MaskedMAE()
 
+
     ## READY DATASET
-    base_path = os.getcwd()
 
     # Load and setup synthetic dataset
-    if not is_cer:
+    if dataset_name != 'cer':
         dataset_path = os.path.join(base_path, 'datasets', 'synthetic',
                                     dataset_name)
         dataset_params_path = os.path.join(dataset_path,
@@ -225,6 +242,7 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         metrics=None
     )
 
+
     ## TRAINING
     trainer = pl.Trainer(max_epochs=n_epochs,
                         logger=False,
@@ -237,6 +255,7 @@ def run_experiment(dataset_name, n_clusters, adj_type):
                         gradient_clip_algorithm='norm',
                         enable_checkpointing=False)
     trainer.fit(predictor, datamodule=dm)
+
 
     ## EVALUATION
     predictor.freeze()
@@ -263,15 +282,16 @@ experiment_name = args.experiment
 
 if experiment_name == 'synthetic':
     n_clusters = [5]
-    dataset_names = ['balanced', 'balanced_u', 'mostlyseries', 'mostlygraph',
-                     'onlyseries', 'onlygraph']
+    dataset_names = ['balanced_uniform', 'balanced_nonuniform', 'mostlyseries',
+                     'mostlygraph', 'onlyseries', 'onlygraph']
     adj_type = ['N/A']
 elif experiment_name == 'cer':
     n_clusters = [2, 5]
     dataset_names = ['cer']
-    adj_type = ['correntropy', 'euclidean', 'full', 'identity', 'pearson',
-                'random']
-
+    adj_type = ['identity', 'full', 'random', 'euclidean', 'pearson',
+                'correntropy']
+else:
+    raise ValueError(f"Experiment {experiment_name} not recognized")
 
 
 # Setup configurations

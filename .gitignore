@@ -2,6 +2,7 @@ datasets/**
 !datasets/**/
 !datasets/**/dataset_params.npy
 !datasets/**/subset_idx.npy
+!datasets/**/loss_coeffs.csv
 
 results/**
 

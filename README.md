@@ -52,7 +52,7 @@ To change to a cpu configuration or different CUDA version, modify the two links
 
 ## 📦 Datasets
 
-The datasets are stored in the folder `datasets`, which by default is empty with the exception of files to reproduce the synthetic data generation and the subset sampling of CER.
+The datasets are stored in the folder `datasets`, which by default is empty with the exception of files to reproduce the synthetic data generation, the subset sampling of CER, and the pooling loss coefficients found in the hyperparameter searches.
 
 ### Synthetic datasets
 Numpy files containing the parameters used to generate the different synthetic datasets can be found at `data/synthetic/{dataset_name}/dataset_params.npy`. Code for generating the synthetic time series data is in `synth_data.py` in the `source/data` directory. An example of how to generate data without the use of the saved params can be found at the end of the script, and if run it will generate and save the Balanced dataset to the `datasets` directory. After generation the following files will be created:
@@ -87,10 +87,10 @@ The adjacency matrix construction methods used with CER is given in
 
 ## 🧪 Experiments
 
-The training and evaluation of the model (with MinCutPool) can be executed by running the file `run_experiment.py`. The script is very minimal and executes only one run with the given configuration and prints the clustering metrics. By default the script is set to execute the experiment on the Balanced dataset. The script can be run with different configurations with the following command:
+The training and evaluation of the model can be executed by running the file `run_experiment.py`. The script is very minimal and executes only one run with the given configuration and prints the clustering metrics. By default the script is set to execute the experiment on the Balanced dataset. The script can be run with different configurations with the following command:
 
 ```bash
-python main.py --dataset={dataset_name} --n_clusters={n_clusters} --adj_type={adjacency construction method}
+python main.py --dataset={dataset_name} --n_clusters={n_clusters} --adj_type={adjacency construction method} --pool_loss={pool loss method}
 ```
 
 Synthetic data generation is handled automatically in the script, so the dataset will be generated if it does not exist.
@@ -99,7 +99,9 @@ The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, 
 
 The following adjacency types (for CER) are available: `identity`, `full`, `random`, `euclidean`, `pearson`, and `correntropy`.
 
-Alternatively, a complete training session with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
+The following pooling loss methods are available: `diffpool`, `mincut`, `dmon`, and `tvgnn`.
+
+Alternatively, a complete training session (for model with MinCutPool) with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
 
 ```bash
 python run_and_log_results.py --experiment={experiment_name}

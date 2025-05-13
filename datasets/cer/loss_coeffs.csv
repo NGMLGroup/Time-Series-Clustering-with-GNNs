@@ -1,0 +1,13 @@
+dataset_name,n_clusters,adj_type,topo_w,qual_w
+cer,2,correntropy,2.5,0.1
+cer,2,euclidean,2.02,0.1
+cer,2,full,2.5,0.58
+cer,2,identity,1.06,0.1
+cer,2,pearson,2.5,0.1
+cer,2,random,0.1,0.1
+cer,5,correntropy,2.5,0.58
+cer,5,euclidean,1.06,0.1
+cer,5,full,1.06,2.5
+cer,5,identity,2.02,0.1
+cer,5,pearson,0.58,0.1
+cer,5,random,0.1,1.54

@@ -3,6 +3,7 @@ import argparse
 import torch
 import pprint
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 
 from sklearn.metrics.cluster import (normalized_mutual_info_score,
@@ -27,9 +28,10 @@ accelerator = (
 
 # Argument parsing for dataset
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, default='balanced')
+parser.add_argument('--dataset', type=str, default='balanced_uniform')
 parser.add_argument('--n_clusters', type=int, default=5)
 parser.add_argument('--adj_type', type=str, default='euclidean')
+parser.add_argument('--pool_loss', type=str, default='mincut')
 args = parser.parse_args()
 
 # Dataset and clustering parameters
@@ -38,34 +40,36 @@ n_clusters = args.n_clusters
 adj_type = args.adj_type
 scaler_axis = (0, 1)
 
-# Dicts of auxliary loss weights
-loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
-                'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
-                'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
-
-loss_weights_cer = {'2': {'correntropy': [2.50, 0.1],
-                                'euclidean': [2.02, 0.1],
-                                'full': [2.50, 0.58],
-                                'identity': [1.06, 0.1],
-                                'pearson': [2.5, 0.1],
-                                'random': [0.1, 0.1]},
-                    '5': {'correntropy': [2.5, 0.58],
-                                    'euclidean': [1.06, 0.10],
-                                    'full': [1.06, 2.50],
-                                    'identity': [2.02, 0.1],
-                                    'pearson': [0.58, 0.1],
-                                    'random': [0.1, 1.54]},
-}
-
-if dataset_name == 'cer':
-    is_cer = True
-else:
-    is_cer = False
-
 
 ## PARAMETERS
 
-# Model parameters
+base_path = os.getcwd()
+
+# Load in loss weights
+if dataset_name == 'cer':
+    coeff_path = os.path.join(base_path, 'datasets', 'cer',
+                        'loss_coeffs.csv')
+    loss_weights = pd.read_csv(coeff_path)
+
+    # Extract based on adj_type and n_clusters
+    topo_w, qual_w = loss_weights.loc[
+        (loss_weights['adj_type'] == adj_type) &
+        (loss_weights['n_clusters'] == n_clusters)
+        ][['topo_w', 'qual_w']].values[0]
+
+else:
+    coeff_path = os.path.join(base_path, 'datasets', 'synthetic',
+                              'loss_coeffs.csv')
+    loss_weights = pd.read_csv(coeff_path)
+
+    # Extract based on pool_loss and dataset_name
+    topo_w, qual_w = loss_weights.loc[
+        (loss_weights['pool_loss'] == args.pool_loss) &
+        (loss_weights['dataset_name'] == dataset_name)
+        ][['topo_w', 'qual_w']].values[0]
+
+
+# Other model parameters
 hidden_size = 16
 temporal_layers = 2
 kernel_size = 3
@@ -80,17 +84,10 @@ softmax_temp = 1.0
 temp_step_size = (softmax_temp - 0.01) / 100
 temp_min = 0.01
 
-if not is_cer and dataset_name in loss_weights_synth.keys():
-    topo_w, qual_w = loss_weights_synth[dataset_name]
-elif is_cer and str(n_clusters) in loss_weights_cer.keys():
-    topo_w, qual_w = loss_weights_cer[str(n_clusters)][adj_type]
-else:
-    topo_w = 0.1
-    qual_w = 0.1
 
 # Training parameters
 n_epochs = 250
-batch_size = 16 if not is_cer else 8
+batch_size = 16 if dataset_name != 'cer' else 8
 starting_lr = 1e-3
 scale_target = True
 gradient_clip_val = 5
@@ -102,11 +99,11 @@ weight_decay = 1e-4
 # Loss and metrics
 loss_fn = MaskedMAE()
 
+
 ## READY DATASET
-base_path = os.getcwd()
 
 # Load and setup synthetic dataset
-if not is_cer:
+if dataset_name != 'cer':
     dataset_path = os.path.join(base_path, 'datasets', 'synthetic',
                                 dataset_name)
     dataset_params_path = os.path.join(dataset_path,
@@ -178,6 +175,7 @@ dm = SpatioTemporalDataModule(
 dm.setup()
 print(dm)
 
+
 ## SETUP MODEL
 model_kwargs = {
     'input_size': dm.n_channels,
@@ -225,6 +223,7 @@ predictor = CustomPredictor(
     metrics=None
 )
 
+
 ## TRAINING
 trainer = pl.Trainer(max_epochs=n_epochs,
                     logger=False,
@@ -237,6 +236,7 @@ trainer = pl.Trainer(max_epochs=n_epochs,
                     gradient_clip_algorithm='norm',
                     enable_checkpointing=False)
 trainer.fit(predictor, datamodule=dm)
+
 
 ## EVALUATION
 predictor.freeze()
