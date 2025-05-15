@@ -41,8 +41,8 @@ class TTSModel(torch.nn.Module):
             Prediction horizon.
         pool_method : str
             Pooling method (pooling loss type).
-        unpool_softmax : str
-            Softmax type applied during unpooling (forward pass).
+        lift_softmax : str
+            Softmax type applied during lifting (forward pass).
             Options: 'temperature', 'straight_through'.
         softmax_temp : float
             Initial softmax temperature.
@@ -63,7 +63,7 @@ class TTSModel(torch.nn.Module):
                  qual_w,
                  horizon,
                  pool_method = 'mincut',
-                 unpool_softmax = 'temperature',
+                 lift_softmax = 'temperature',
                  softmax_temp = 1.
                  ):
         super(TTSModel, self).__init__()
@@ -117,10 +117,10 @@ class TTSModel(torch.nn.Module):
                                     dropout=0.
                                 )
 
-        if unpool_softmax == 'temperature':
-            self.unpool_softmax = softmax_with_temperature
-        elif unpool_softmax == 'straight_through':
-            self.unpool_softmax = straight_through_softmax
+        if lift_softmax == 'temperature':
+            self.lift_softmax = softmax_with_temperature
+        elif lift_softmax == 'straight_through':
+            self.lift_softmax = straight_through_softmax
 
         self.softmax_temp = softmax_temp
 
@@ -167,7 +167,7 @@ class TTSModel(torch.nn.Module):
         x = self.temporal_decoder(x)
 
         # x_out: [batches out_steps n_nodes channels]
-        x = self.unpool(x, s)
+        x = self.lift(x, s)
 
         return x
 
@@ -187,10 +187,10 @@ class TTSModel(torch.nn.Module):
         return x, s, aux_loss
 
 
-    def unpool(self, x, s):
+    def lift(self, x, s):
         # x_in: [batches out_steps n_latent channels]
 
-        s = self.unpool_softmax(s, dim=-1, t=self.softmax_temp)
+        s = self.lift_softmax(s, dim=-1, t=self.softmax_temp)
 
         # x_out: [batches out_steps nodes channels]
         x = torch.matmul(torch.unsqueeze(s, dim=1), x)

@@ -83,6 +83,8 @@ pool_method = 'mincut'
 softmax_temp = 1.0
 temp_step_size = (softmax_temp - 0.01) / 100
 temp_min = 0.01
+lift_softmax = ('temperature' if dataset_name != 'cer'
+                else 'straight_through')
 
 
 # Training parameters
@@ -193,7 +195,8 @@ model_kwargs = {
     'topo_w': topo_w,
     'qual_w': qual_w,
     'pool_method': pool_method,
-    'softmax_temp': softmax_temp
+    'softmax_temp': softmax_temp,
+    'lift_softmax': lift_softmax,
 }
 
 # Optimizer config

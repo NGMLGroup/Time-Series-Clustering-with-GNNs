@@ -33,25 +33,6 @@ args = parser.parse_args()
 
 def run_experiment(dataset_name, n_clusters, adj_type):
 
-    # # Dict of auxliary loss weights
-    # loss_weights_synth = {'balanced': [0.1, 0.1], 'balanced_u': [1.06, 0.1],
-    #                 'mostlyseries': [0.1, 0.1], 'mostlygraph': [0.58, 0.1],
-    #                 'onlyseries': [0.1, 0.1], 'onlygraph': [1.54, 0.58]}
-
-    # loss_weights_cer = {'2': {'correntropy': [2.50, 0.1],
-    #                                 'euclidean': [2.02, 0.1],
-    #                                 'full': [2.50, 0.58],
-    #                                 'identity': [1.06, 0.1],
-    #                                 'pearson': [2.5, 0.1],
-    #                                 'random': [0.1, 0.1]},
-    #                     '5': {'correntropy': [2.5, 0.58],
-    #                                     'euclidean': [1.06, 0.10],
-    #                                     'full': [1.06, 2.50],
-    #                                     'identity': [2.02, 0.1],
-    #                                     'pearson': [0.58, 0.1],
-    #                                     'random': [0.1, 1.54]},
-    # }
-
     scaler_axis = (0, 1)
     base_path = os.getcwd()
 
@@ -92,14 +73,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
     softmax_temp = 1.0
     temp_step_size = (softmax_temp - 0.01) / 100
     temp_min = 0.01
-
-    # if not is_cer and dataset_name in loss_weights_synth.keys():
-    #     topo_w, qual_w = loss_weights_synth[dataset_name]
-    # elif is_cer and str(n_clusters) in loss_weights_cer.keys():
-    #     topo_w, qual_w = loss_weights_cer[str(n_clusters)][adj_type]
-    # else:
-    #     topo_w = 0.1
-    #     qual_w = 0.1
+    lift_softmax = ('temperature' if dataset_name != 'cer'
+                    else 'straight_through')
 
     # Training parameters
     n_epochs = 250
@@ -212,7 +187,8 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         'topo_w': topo_w,
         'qual_w': qual_w,
         'pool_method': pool_method,
-        'softmax_temp': softmax_temp
+        'softmax_temp': softmax_temp,
+        'lift_softmax': lift_softmax,
     }
 
     # Optimizer config

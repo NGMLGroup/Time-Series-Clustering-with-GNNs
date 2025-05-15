@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 
 def construct_adjacency(dataset, adj_type='identity', mask=None,
-                        train_slice=None, **kwargs):
+                        set_slice=None, **kwargs):
     """Constructs an adjacency matrix for a given dataset based on the specified
     adjacency type.
     Parameters:
@@ -34,8 +34,8 @@ def construct_adjacency(dataset, adj_type='identity', mask=None,
         - 'random': Random graph using Erdos-Renyi model.
     mask : array-like, optional
         Mask to apply to the dataset.
-    train_slice : slice, optional
-        Slice of the dataset to use for training.
+    set_slice : slice, optional
+        Slice of the dataset to compute the adjacency matrix from.
     **kwargs : dict
         Additional keyword arguments for specific adjacency types:
         - 'gamma': (float) Parameter for 'correntropy' adjacency type.
@@ -49,13 +49,13 @@ def construct_adjacency(dataset, adj_type='identity', mask=None,
     """
 
     n_nodes = dataset.n_nodes
-    train_df = dataset.dataframe()
+    df = dataset.dataframe()
     if mask is None:
         mask = dataset.mask
-    train_df = train_df * mask[..., -1]
-    if train_slice is not None:
-        train_df = dataset.dataframe().iloc[train_slice]
-    x = train_df.values
+    df = df * mask[..., -1]
+    if set_slice is not None:
+        df = dataset.dataframe().iloc[set_slice]
+    x = df.values
 
     if adj_type == 'identity':
         adj = np.eye(n_nodes, dtype=np.float32)
@@ -74,13 +74,13 @@ def construct_adjacency(dataset, adj_type='identity', mask=None,
     elif adj_type == 'pearson' or adj_type == 'correntropy':
 
         if adj_type == 'pearson':
-            tot = train_df.mean(1).to_frame()
+            tot = df.mean(1).to_frame()
             bias = tot.groupby([tot.index.weekday,
                                 tot.index.hour,
                                 tot.index.minute]).transform(np.nanmean).values
-            scale = train_df.values.std(0, keepdims=True)
-            train_df = train_df - bias * scale
-            adj = np.corrcoef(train_df.values, rowvar=False)
+            scale = df.values.std(0, keepdims=True)
+            df = df - bias * scale
+            adj = np.corrcoef(df.values, rowvar=False)
 
         elif adj_type == 'correntropy':
             gamma = kwargs.get('gamma', 0.05)
