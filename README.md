@@ -11,10 +11,12 @@ The repository is structured as follows:
 ./
 ├── datasets/                           # Datasets used in the experiments
 │   ├── cer/                            # CER dataset
-│   |   └── subset_idx.npy              # Indices for the subset of the CER dataset
+│   |   ├── loss_coeffs.csv             # Coefficients for the pooling loss functions
+|   |   └── subset_idx.npy              # Indices for the subset of the CER dataset
 │   ├── synthetic/                      # Synthetic datasets
 │   |   ├── {dataset_name}/             # Dataset folder
 │   |   |   └── dataset_params.npy      # Parameters used to generate the data
+|   |   └── loss_coeffs.csv             # Coefficients for the pooling loss functions
 ├── source/                             # Source code
 |   |   ├── data/                       # Folder related to data handling
 |   |   |   ├── adj_construction.py     # Adjacency matrix construction methods
@@ -63,7 +65,7 @@ Numpy files containing the parameters used to generate the different synthetic d
 - `dataset_params.npy`: Numpy file containing the parameters used to generate the data.
 - `dataset_params.txt`: Text file containing the parameters used to generate the data (intended for human readability).
 
-The given parameters can be used to generate the data as follows:
+The given parameters in the `dataset_params.npy` files can be used to generate the data as follows:
 
 ```python
 from source.data.synth_data import setup_dataset_with_params

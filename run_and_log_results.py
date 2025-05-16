@@ -320,6 +320,6 @@ os.makedirs('results', exist_ok=True)
 # Create subdirectory based on experiment choice
 os.makedirs(os.path.join('results', experiment_name), exist_ok=True)
 
-# Save the results to a spreadsheet file
-results_df.to_excel(os.path.join('results', experiment_name,
-                                 'experiment_results.xlsx'), index=False)
+# Save the results to a CSV file
+results_df.to_csv(os.path.join('results', experiment_name,
+                               'experiment_results.csv'), index=False)
