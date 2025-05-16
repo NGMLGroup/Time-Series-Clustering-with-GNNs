@@ -26,7 +26,7 @@ The repository is structured as follows:
 |   |   |   ├── layers.py               # Layers used in the model
 |   |   |   ├── model.py                # Model implementation
 |   |   |   ├── pooling_functions.py    # Functions for the different pooling methods
-|   |   |   ├── predictor               # Predictor class for training the model
+|   |   |   ├── predictor.py            # Predictor class for training the model
 |   |   |   └── utils.py                # Utility functions
 ├── run_and_log_results.py              # Script for running and logging results of the experiments
 └── run_experiment.py                   # Minimal example script for training and evaluating the model
@@ -97,16 +97,16 @@ python main.py --dataset={dataset_name} --n_clusters={n_clusters} --adj_type={ad
 
 Synthetic data generation is handled automatically in the script, so the dataset will be generated if it does not exist.
 
-The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, `mostlygraph`, `onlyseries`, and `onlygraph`.
+The following datasets are available: `balanced_uniform`, `balanced_nonuniform`, `mostlyseries`, `mostlygraph`, `onlyseries`, and `onlygraph`.
 
 The following adjacency types (for CER) are available: `identity`, `full`, `random`, `euclidean`, `pearson`, and `correntropy`.
 
-The following pooling loss methods are available: `diffpool`, `mincut`, `dmon`, `tvgnn`, `nopoolloss`.
+The following pooling loss methods are available: `diffpool`, `mincut`, `dmon`, `tvgnn`, and `nopoolloss`.
 
-Alternatively, a complete training session (for model with MinCutPool) with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
+Alternatively, a complete training session (for STGNN model with MinCutPool) with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
 
 ```bash
 python run_and_log_results.py --experiment={experiment_name}
 ```
 
-where the available experiments are `synthetic` and `cer`. Test set results are saved in the `results` folder.
+where the available experiments are `synthetic` and `cer`. Test set results are saved in the `results` folder as CSV files.
