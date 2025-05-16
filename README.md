@@ -101,7 +101,7 @@ The following datasets are available: `balanced`, `balanced_u`, `mostlyseries`, 
 
 The following adjacency types (for CER) are available: `identity`, `full`, `random`, `euclidean`, `pearson`, and `correntropy`.
 
-The following pooling loss methods are available: `diffpool`, `mincut`, `dmon`, and `tvgnn`.
+The following pooling loss methods are available: `diffpool`, `mincut`, `dmon`, `tvgnn`, `nopoolloss`.
 
 Alternatively, a complete training session (for model with MinCutPool) with all datasets/graphs and logging of test metrics can be executed by running the script `run_and_log_results.py` with the following command:
 

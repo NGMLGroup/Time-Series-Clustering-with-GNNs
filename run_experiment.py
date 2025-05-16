@@ -46,7 +46,11 @@ scaler_axis = (0, 1)
 base_path = os.getcwd()
 
 # Load in loss weights
-if dataset_name == 'cer':
+if args.pool_loss == 'nopoolloss':
+    topo_w = 0.0
+    qual_w = 0.0
+
+elif dataset_name == 'cer':
     coeff_path = os.path.join(base_path, 'datasets', 'cer',
                         'loss_coeffs.csv')
     loss_weights = pd.read_csv(coeff_path)
