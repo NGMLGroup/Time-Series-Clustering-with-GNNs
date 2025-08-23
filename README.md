@@ -12,7 +12,7 @@ This repository contains the code to reproduce the experiments presented in the 
 
 The repository is structured as follows:
 
-```bash
+```
 ./
 ├── datasets/                           # Datasets used in the experiments
 │   ├── cer/                            # CER dataset
