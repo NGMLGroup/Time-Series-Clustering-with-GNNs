@@ -1,13 +1,18 @@
-# Time-Series-Clustering-with-GNNs
+# Time Series Clustering with Graph Neural Networks
 
-This repository contains the code for the reproducibility of the experiments presented in the paper "On Time Series Clustering with Graph Neural Networks".
+[![TMLR](https://img.shields.io/badge/TMLR-2025-blue.svg?)](https://openreview.net/forum?id=MHQXfiXsr3)
 
+Pytorch implementaiton of the Spatio-temporal Graph Neural Network model to perform clustering of multivariate time series, whose dependencies are represented by a graph.
+
+![Architectural diagram of the model](figure.png)
+
+This repository contains the code to reproduce the experiments presented in the paper ["On Time Series Clustering with Graph Neural Networks"](https://openreview.net/forum?id=MHQXfiXsr3) by Jonas Berg Hansen, [Andrea Cini](https://andreacini.github.io/), and [Filippo Maria Bianchi](https://sites.google.com/view/filippombianchi/home).
 
 ## 📂 Repository structure
 
 The repository is structured as follows:
 
-```
+```bash
 ./
 ├── datasets/                           # Datasets used in the experiments
 │   ├── cer/                            # CER dataset
@@ -33,16 +38,19 @@ The repository is structured as follows:
 ```
 
 ## 📝 Requirements
-The implementation is done with [Pytorch](https://pytorch.org/) and [Pytorch Geometric](https://pytorch-geometric.readthedocs.io/). Moreover, [Torch Spatiotemporal](https://torch-spatiotemporal.readthedocs.io/) is used heavily for the implementation of the spatio-temporal GNN model, data handling and generation, and training of the model. In full, the code is verified for the following packages with their dependencies:
 
-    python=3.12.8
-    torch=2.5.1
-    torch-geometric=2.6.1
-    torch_scatter=2.1.2
-    torch_sparse=0.6.18
-    torch-spatiotemporal=0.9.4
-    pygsp=0.5.1
-    openpyxl=3.1.5
+The implementation is based on [Pytorch](https://pytorch.org/) and [Pytorch Geometric](https://pytorch-geometric.readthedocs.io/). Moreover, we rely on [Torch Spatiotemporal](https://torch-spatiotemporal.readthedocs.io/) for the implementation of the spatio-temporal GNN model, data handling and generation, and training of the model. The code is verified for the following packages with their dependencies:
+
+```bash
+python=3.12.8
+torch=2.5.1
+torch-geometric=2.6.1
+torch_scatter=2.1.2
+torch_sparse=0.6.18
+torch-spatiotemporal=0.9.4
+pygsp=0.5.1
+openpyxl=3.1.5
+```
 
 The file `environment.yml` is provided for easy installation of the required packages (checked for Linux system with Nvidia GPU). The environment can be created with the following command:
 
@@ -57,6 +65,7 @@ To change to a cpu configuration or different CUDA version, modify the two links
 The datasets are stored in the folder `datasets`, which by default is empty with the exception of files to reproduce the synthetic data generation, the subset sampling of CER, and the pooling loss coefficients found in the hyperparameter searches.
 
 ### Synthetic datasets
+
 Numpy files containing the parameters used to generate the different synthetic datasets can be found at `data/synthetic/{dataset_name}/dataset_params.npy`. Code for generating the synthetic time series data is in `synth_data.py` in the `source/data` directory. An example of how to generate data without the use of the saved params can be found at the end of the script, and if run it will generate and save the Balanced dataset to the `datasets` directory. After generation the following files will be created:
 
 - `series.npz`: Numpy file containing the time series data.
@@ -86,7 +95,6 @@ The CER dataset is loaded using the `FilteredCER` class in `cer_data.py` in the 
 The adjacency matrix construction methods used with CER is given in
  `adj_construction.py` in the `source/data` directory. At the end of the script is an example of how to apply the function, using the `Elergone` dataset from Torch Spatiotemporal.
 
-
 ## 🧪 Experiments
 
 The training and evaluation of the model can be executed by running the file `run_experiment.py`. The script is very minimal and executes only one run with the given configuration and prints the clustering metrics. By default the script is set to execute the experiment on the Balanced dataset. The script can be run with different configurations with the following command:
@@ -110,3 +118,18 @@ python run_and_log_results.py --experiment={experiment_name}
 ```
 
 where the available experiments are `synthetic` and `cer`. Test set results are saved in the `results` folder as CSV files.
+
+## 📚 Reference
+
+If you find this code useful please consider citing our paper:
+
+```bibtex
+@article{hansen2025clustering,
+  title={On Time Series Clustering with Graph Neural Networks},
+  author={Berg Hansen, Jonas and Cini, Andrea and Bianchi, Filippo Maria},
+  journal={Transactions on Machine Learning Research},
+  issn={2835-8856},
+  year={2025},
+  url={https://openreview.net/forum?id=MHQXfiXsr3}
+}
+```
