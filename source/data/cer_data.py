@@ -31,9 +31,8 @@ def parse_date(date):
 
 class FilteredCER(DatetimeDataset):
 
-    # request url at
+    # request data at
     # https://www.ucd.ie/issda/data/commissionforenergyregulationcer/
-    url = None
 
     default_freq = '30min'
 
@@ -45,9 +44,9 @@ class FilteredCER(DatetimeDataset):
                  time_cutoff=None,
                  remove_other=True,
                  resample_hourly=True):
-        # set root path
         if root is None:
-            self.root = None # TODO: set default path
+            self.root = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     '..', '..', 'datasets', 'cer')
         else:
             self.root = root
 
@@ -78,20 +77,7 @@ class FilteredCER(DatetimeDataset):
         return ['cer_en.h5', 'allocations.xlsx', 'manifest.docx']
 
     def download(self) -> None:
-        if self.url is None:
-            raise ValueError('Can not download dataset because ' \
-                        'url is not set in the class definition.')
-
-        path = download_url(self.url, self.root_dir)
-        extract_zip(path, self.root_dir)
-        os.unlink(path)
-        downloaded_folder = os.path.join(self.root_dir, 'irish')
-        # move files to root folder
-        for file in os.listdir(downloaded_folder):
-            if file in self.raw_file_names:
-                os.rename(os.path.join(downloaded_folder, file),
-                          os.path.join(self.root_dir, file))
-        self.clean_root_dir()
+        raise NotImplementedError
 
     def build(self):
         self.maybe_download()
@@ -212,6 +198,7 @@ class FilteredCER(DatetimeDataset):
         return pd.read_hdf(self.required_files_paths[0])
 
 if __name__ == '__main__':
-    root = os.path.join(os.getcwd(), '..', '..', 'datasets', 'cer')
-    cer = FilteredCER(root=root)
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '..', '..', 'datasets', 'cer')
+    cer = FilteredCER(root=data_path)
     print(cer)

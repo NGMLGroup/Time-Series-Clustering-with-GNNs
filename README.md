@@ -90,7 +90,7 @@ dataset = SyntheticSpatioTemporalDataset(load_from='{path_to_data}')
 
 ### CER dataset
 
-The CER dataset is loaded using the `FilteredCER` class in `cer_data.py` in the `source/data` directory. The download URL is not provided in the script and should be requested [here](https://www.ucd.ie/issda/data/commissionforenergyregulationcer/). To successfully download the dataset, the url in the class must be replaced (it is None by default). The `datasets/cer` directory contains a file named `subset_idx.npy` which is used to extract the subset of the dataset used in the experiments.
+The CER dataset is loaded using the `FilteredCER` class in `cer_data.py` in the `source/data` directory. A download URL is not provided in the script and the data should be requested [here](https://www.ucd.ie/issda/data/commissionforenergyregulationcer/). To successfully set up the dataset, either implement the download class method in the script, or manually place the necessary files in `datasets/cer`. See the script for the required file names. Furthermore, `datasets/cer` directory already contains a file named `subset_idx.npy` which is used to extract the randomly sampled subset used in the experiments.
 
 The adjacency matrix construction methods used with CER is given in
  `adj_construction.py` in the `source/data` directory. At the end of the script is an example of how to apply the function, using the `Elergone` dataset from Torch Spatiotemporal.
