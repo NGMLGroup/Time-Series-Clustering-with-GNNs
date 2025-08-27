@@ -4,7 +4,7 @@ from einops import rearrange
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.typing import OptTensor
 from tsl.nn.blocks import MLPDecoder
-from tsl.nn.blocks.encoders import ConditionalBlock
+from tsl.nn.blocks.encoders import ConditionalBlock, RNN
 from .layers import GNNEncoder, PoolingLayerWithStaticAssignments, DilatedTCN
 from .utils import softmax_with_temperature, straight_through_softmax
 
@@ -27,8 +27,9 @@ class TTSModel(torch.nn.Module):
             Whether to use exponential dilation.
         skip_connection : bool
             Whether to use skip connections in the temporal encoder.
-        gcn_layers : int
-            Number of layers in the graph convolutional encoder.
+        gnn_layers : int
+            Number of message passing layers in the graph neural network
+            encoder.
         n_nodes : int
             Number of nodes in the graph.
         n_clusters : int
@@ -39,8 +40,16 @@ class TTSModel(torch.nn.Module):
             Weight of the quality loss.
         horizon : int
             Prediction horizon.
+        temporal_enc_type : str
+            Type of temporal encoder to use. Options: 'tcn', 'gru'.
+        temporal_aggr_type : str
+            Type of temporal aggregation to use. Options: 'attention', 'mean',
+            'last'.
+        mp_method : str
+            Message passing method. Options: 'gcs', 'gat'.
         pool_method : str
-            Pooling method (pooling loss type).
+            Pooling method (pooling loss type). Options: 'mincut',
+            'asymcheegercut', 'diffpool', 'dmon'.
         lift_softmax : str
             Softmax type applied during lifting (forward pass).
             Options: 'temperature', 'straight_through'.
@@ -56,12 +65,15 @@ class TTSModel(torch.nn.Module):
                  dilation,
                  exponential_dilation,
                  skip_connection,
-                 gcn_layers,
+                 gnn_layers,
                  n_nodes,
                  n_clusters,
                  topo_w,
                  qual_w,
                  horizon,
+                 temporal_enc_type = 'tcn',
+                 temporal_aggr_type = 'attention',
+                 mp_method = 'gcs',
                  pool_method = 'mincut',
                  lift_softmax = 'temperature',
                  softmax_temp = 1.
@@ -78,7 +90,8 @@ class TTSModel(torch.nn.Module):
         else:
             self.input_encoder = torch.nn.Linear(input_size, hidden_size)
 
-        self.temporal_encoder = DilatedTCN(
+        if temporal_enc_type == 'tcn':
+            self.temporal_encoder = DilatedTCN(
                                     input_size=hidden_size,
                                     hidden_size=hidden_size,
                                     n_layers=temporal_layers,
@@ -88,15 +101,35 @@ class TTSModel(torch.nn.Module):
                                     ff_layers=0,
                                     skip_connection=skip_connection
                                 )
-        self.receptive_field = self.temporal_encoder.receptive_field
-        self.lin_q = torch.nn.Linear(hidden_size, hidden_size)
-        self.lin_k = torch.nn.Linear(hidden_size, hidden_size, bias=False)
+            self.receptive_field = self.temporal_encoder.receptive_field
+
+        elif temporal_enc_type == 'gru':
+            self.temporal_encoder = RNN(
+                                    input_size=hidden_size,
+                                    hidden_size=hidden_size,
+                                    cell='gru',
+                                    n_layers=temporal_layers,
+                                    dropout=0.,
+                                    return_only_last_state=False
+                                )
+
+        else:
+            print(f"Unknown temporal encoder type: {temporal_enc_type}")
+
+        self.temporal_aggr_type = temporal_aggr_type
+        if self.temporal_aggr_type == 'attention':
+                self.lin_q = torch.nn.Linear(hidden_size, hidden_size)
+                self.lin_k = torch.nn.Linear(hidden_size, hidden_size,
+                                             bias=False)
+
+
 
         self.gnn_encoder = GNNEncoder(
                                 input_size=hidden_size,
                                 hidden_size=hidden_size,
-                                n_layers=gcn_layers,
-                                dropout=0.
+                                n_layers=gnn_layers,
+                                dropout=0.,
+                                mp_method=mp_method
                             )
 
 
@@ -206,17 +239,26 @@ class TTSModel(torch.nn.Module):
 
     def temporal_aggr(self, x: torch.Tensor, dim: int = -3):
 
-        # Removes the first entries because they include padded values in the
-        # receptive field.
-        # E.g. if the sequence length is 48 and the recept field is 27, we keep
-        # only the last 22 entries.
-        if x.size(dim) > self.receptive_field:
-            index = torch.arange(self.receptive_field - 1, x.size(dim),
-                                 device=x.device)
-            x = x.index_select(dim, index)
+        if isinstance(self.temporal_encoder, DilatedTCN):
+            # Removes the first entries because they include padded values in the
+            # receptive field.
+            # E.g. if the sequence length is 48 and the recept field is 27, we keep
+            # only the last 22 entries.
+            if x.size(dim) > self.receptive_field:
+                index = torch.arange(self.receptive_field - 1, x.size(dim),
+                                    device=x.device)
+                x = x.index_select(dim, index)
 
-        # Apply linear self-attention
-        q = self.lin_q(torch.select(x, dim, -1)).unsqueeze(dim)
-        k = self.lin_k(x)
-        alpha = torch.einsum('bqnf,btnf->btnf', q, k).softmax(dim=dim)
-        return (x * alpha).sum(dim)
+        if self.temporal_aggr_type == 'mean':
+            return x.mean(dim)
+        elif self.temporal_aggr_type == 'last':
+            return x[:, -1]
+        elif self.temporal_aggr_type == 'attention':
+            # Apply linear self-attention
+            q = self.lin_q(torch.select(x, dim, -1)).unsqueeze(dim)
+            k = self.lin_k(x)
+            alpha = torch.einsum('bqnf,btnf->btnf', q, k).softmax(dim=dim)
+            return (x * alpha).sum(dim)
+        else:
+            raise ValueError("Unknown temporal aggregation type: "
+                             f"{self.temporal_aggr_type}")

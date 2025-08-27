@@ -63,12 +63,15 @@ def run_experiment(dataset_name, n_clusters, adj_type):
 
     # Other model parameters
     hidden_size = 16
+    temporal_enc_type = 'tcn'
+    temporal_aggr_type = 'attention'
     temporal_layers = 2
     kernel_size = 3
     dilation = 2
     exponential_dilation = True
     skip_connection = True
-    gcn_layers = 2
+    mp_method = 'gcs'
+    gnn_layers = 2
     pool_method = 'mincut'
     softmax_temp = 1.0
     temp_step_size = (softmax_temp - 0.01) / 100
@@ -176,12 +179,15 @@ def run_experiment(dataset_name, n_clusters, adj_type):
         'horizon': horizon,
         'exog_size': exog_size,
         'hidden_size': hidden_size,
+        'temporal_enc_type': temporal_enc_type,
+        'temporal_aggr_type': temporal_aggr_type,
         'temporal_layers': temporal_layers,
         'kernel_size': kernel_size,
         'dilation': dilation,
         'exponential_dilation': exponential_dilation,
         'skip_connection': skip_connection,
-        'gcn_layers': gcn_layers,
+        'mp_method': mp_method,
+        'gnn_layers': gnn_layers,
         'n_nodes': torch_dataset.n_nodes,
         'n_clusters':  n_clusters,
         'topo_w': topo_w,

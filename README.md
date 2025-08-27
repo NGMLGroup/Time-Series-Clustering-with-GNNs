@@ -126,7 +126,7 @@ If you find this code useful please consider citing our paper:
 ```bibtex
 @article{hansen2025clustering,
   title={On Time Series Clustering with Graph Neural Networks},
-  author={Berg Hansen, Jonas and Cini, Andrea and Bianchi, Filippo Maria},
+  author={Hansen, Jonas Berg and Cini, Andrea and Bianchi, Filippo Maria},
   journal={Transactions on Machine Learning Research},
   issn={2835-8856},
   year={2025},

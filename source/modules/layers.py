@@ -1,8 +1,8 @@
 import torch
 
 from torch import nn, Tensor
-from tsl.nn.layers import (GraphConv, TemporalConv, Concatenate, Activation,
-                           Lambda, Dense, NodeEmbedding)
+from tsl.nn.layers import (GraphConv, GATConv, TemporalConv, Concatenate,
+                           Activation, Lambda, Dense, NodeEmbedding)
 from tsl.nn import utils
 from tsl import logger
 from .pooling_functions import (dense_mincut_pool, dense_diff_pool,
@@ -19,6 +19,9 @@ class GNNEncoder(torch.nn.Module):
             Number of hidden units.
         n_layers : int
             Number of GCN layers in the encoder. Default is 1.
+        mp_method : str
+            Message passing method. Options are 'gcs' and 'gat'. Default is
+            'gcs'.
         activation : str
             Activation function. Default is 'relu'.
         dropout : float
@@ -28,21 +31,29 @@ class GNNEncoder(torch.nn.Module):
                 input_size,
                 hidden_size,
                 n_layers=1,
+                mp_method='gcs',
                 activation='relu',
                 dropout=0.
                 ):
         super(GNNEncoder, self).__init__()
 
+        self.mp_method = mp_method
+        if mp_method == 'gcs':
+            mp_kwargs = {'root_weight': True, 'norm': 'sym', 'cached': True}
+            mp_layer_class = GraphConv
+        elif mp_method == 'gat':
+            mp_kwargs = {'heads': 4, 'concat': True, 'add_self_loops': True}
+            mp_layer_class = GATConv
+        else:
+            raise NotImplementedError(f"Message passing method {mp_method} "
+                                      "not implemented")
+
         graph_convs = []
         for l in range(n_layers):
             graph_convs.append(
-                GraphConv(input_size=input_size if l == 0 else hidden_size,
-                        output_size=hidden_size,
-                        root_weight=True, # skip connection
-                        norm= 'sym',
-                        cached=True,
-                        bias=True
-                        )
+                mp_layer_class(input_size if l == 0 else hidden_size,
+                               hidden_size,
+                               **mp_kwargs)
             )
 
         self.convs = torch.nn.ModuleList(graph_convs)
@@ -53,7 +64,12 @@ class GNNEncoder(torch.nn.Module):
     def forward(self, h, edge_index, edge_weight=None):
         # h: [batches nodes features]
         for conv in self.convs:
-            h = self.dropout(self.activation(conv(h, edge_index, edge_weight)))
+            if self.mp_method == 'gat':
+                h = self.dropout(self.activation(conv(h, edge_index,
+                                                      edge_weight)[0]))
+            else:
+                h = self.dropout(self.activation(conv(h, edge_index,
+                                                      edge_weight)))
 
         return h
 
